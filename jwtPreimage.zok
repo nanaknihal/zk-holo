@@ -1,0 +1,4 @@
+import "hashes/sha256/sha256Padded"
+def main(private u8[5] jwt, u32[8] jwtHash): //allow 2000 bytes
+  assert(sha256Padded(jwt) == jwtHash)
+  return
