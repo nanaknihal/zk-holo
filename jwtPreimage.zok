@@ -2,6 +2,6 @@ import "hashes/sha256/sha256"
 /* Requires application-specific parameters: 
  *numBlocks (i.e., jwtLengthInBits % 512 hopefully this is constant and there isn't much variability in JWT length!)
  * aud (e.g., byte representation of ","*/
-def main(private u8[74] padded, u32[8] jwtHash): //allow JWT up to 512 bits
-  assert(sha256(jwt) == jwtHash)
+def main(private u32[1][16] paddedJwt, u32[8] jwtHash): //allow JWT up to 512 bits
+  assert(sha256(paddedJwt) == jwtHash)
   return
