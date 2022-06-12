@@ -6,17 +6,32 @@ const jwt = 'eyJraWQiOiJwcm9kdWN0aW9uLW9yY2lkLW9yZy03aGRtZHN3YXJvc2czZ2p1am84YWd
 const [header, payload, signature] = jwt.split('.')
 const tbs = `${header}.${payload}`
 
-const toU32StringArray = (bytes) => `["${(bytes.map(x=>x)).join('","')}"]`
-console.log(
-    'snark input', 
-    toU32StringArray(Buffer.from(tbs)), //not base64 (or is base64 hashed?)
-    'numBlocks : ' + toU32StringArray(Buffer.from(tbs)).length % 512
-    )
+const chunk = (arr, chunkSize) => {
+    let out = []
+    for (let i = 0; i < arr.length; i += chunkSize) {
+        const chunk = arr.slice(i, i + chunkSize);
+        out.push(chunk)
+    }
+    return out
+}
 
-console.log(
-    'snark output', 
-    ethers.utils.sha256(Buffer.from(tbs))
-    )
+
+// Bytes is a Buffer object
+const toU8StringArray = (bytes) => `["${(bytes.map(x=>x)).join('","')}"]`
+const toU32StringArray = (bytes) => {
+    let u32s = chunk(bytes.toString('hex'), 8)
+    return u32s.map(x=>parseInt(x, 16).toString())
+}
+// console.log(
+//     'snark input', 
+//     toU32StringArray(Buffer.from(tbs)), //not base64 (or is base64 hashed?)
+//     'numBlocks : ' + toU32StringArray(Buffer.from(tbs)).length % 512
+//     )
+
+// console.log(
+//     'snark output', 
+//     ethers.utils.sha256(Buffer.from(tbs))
+//     )
 
 
 // TEST THIS when message length is 0, 1, 55, 56, 57, 63, 64, 65, 31, 32, 33, 127, 128, 129, 191, 192, 192, 111, 112, 113, and an arbitrary number of bytes
@@ -30,7 +45,6 @@ const padBytesForSha256 = (bytes) => {
     let numZeroesToAdd = 447 - remainderBitsLength // padded message will be bits followed by 1 followed by zeroes up to 448, then 64 bits store the length of message
     // NOTE: since 448 and remainderBitsLength are both divisible by 8, numZeroesToAdd = -1 mod 8
     if(numZeroesToAdd < 0) numZeroesToAdd += 512 // number of zeroes added can't be negative! in case there's no room for the 1 + 64 bits of length, add a new block of 0s
-    console.log(numZeroesToAdd) 
     assert((numZeroesToAdd + 1) % 8 == 0, 'should be padding with bytes, not bits') //this line is provably unecessary
     // NOTE: this line assumes there is a first byte to add, which will always be the case if the input length is divisible by 8 bits
     let firstByteToAdd = Buffer.from('80', 'hex') //0b10000000
@@ -43,14 +57,24 @@ const padBytesForSha256 = (bytes) => {
         nextBytes,
         lengthBytes
     ])
-    // Just put the length at the last 64 bytes
-    
-    // let oneCat = Buffer.concat(
-    //     bytes,
-    //     firstPadByte
-    // )
 }
 
-console.log(padBytesForSha256(Buffer.from('z'.repeat(700))))
-    
-// // console.log()
+// console.log(padBytesForSha256(Buffer.from('z'.repeat(700))))
+
+
+// Converts a string the format which will be used as input to the zero knowledge proof circuit
+const stringToPaddedU32NBy16Array = (str) => 
+JSON.stringify(
+    chunk(
+        toU32StringArray(
+            padBytesForSha256(
+                Buffer.from(str)
+            )
+        ),
+        16
+    )
+)
+
+console.log(
+    stringToPaddedU32NBy16Array('cabba')
+)
