@@ -30,14 +30,16 @@ const padBytesForSha256 = (bytes) => {
     let numZeroesToAdd = 447 - remainderBitsLength // padded message will be bits followed by 1 followed by zeroes up to 448, then 64 bits store the length of message
     // NOTE: since 448 and remainderBitsLength are both divisible by 8, numZeroesToAdd = -1 mod 8
     if(numZeroesToAdd < 0) numZeroesToAdd += 512 // number of zeroes added can't be negative! in case there's no room for the 1 + 64 bits of length, add a new block of 0s
+    console.log(numZeroesToAdd) 
     assert((numZeroesToAdd + 1) % 8 == 0, 'should be padding with bytes, not bits') //this line is provably unecessary
     // NOTE: this line assumes there is a first byte to add, which will always be the case if the input length is divisible by 8 bits
     let firstByteToAdd = Buffer.from('80', 'hex') //0b10000000
-    let nextBytes = Buffer.from('00'.repeat((numZeroesToAdd % 8)-1), 'hex') //-1 because we already added the first byte
+    let nextBytes = Buffer.from('00'.repeat((numZeroesToAdd / 8)), 'hex')
     let lengthBytes = Buffer.alloc(8)
     lengthBytes.writeBigUint64BE(BigInt(bitsLength))
     return Buffer.concat([
         bytes,
+        firstByteToAdd,
         nextBytes,
         lengthBytes
     ])
@@ -49,6 +51,6 @@ const padBytesForSha256 = (bytes) => {
     // )
 }
 
-console.log(padBytesForSha256(Buffer.from('abc')))
+console.log(padBytesForSha256(Buffer.from('z'.repeat(700))))
     
 // // console.log()
