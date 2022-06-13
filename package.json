@@ -2,5 +2,32 @@
   "dependencies": {
     "buffer-xor": "^2.0.2",
     "ethers": "^5.6.8"
-  }
+  },
+  "name": "holozk",
+  "version": "1.0.0",
+  "main": "root.zok",
+  "devDependencies": {},
+  "scripts": {
+    "compile" : "zokrates compile -i root.zok",
+    "build" : "npm run compile && zokrates setup && zokrates export-verifier",
+    "test": "sh test/test.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nanaknihal/zk-holo.git"
+  },
+  "keywords": [
+    "holo",
+    "zero",
+    "knowledge",
+    "proofs",
+    "snark"
+  ],
+  "author": "Nanak Nihal Khalsa",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nanaknihal/zk-holo/issues"
+  },
+  "homepage": "https://github.com/nanaknihal/zk-holo#readme",
+  "description": ""
 }
