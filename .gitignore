@@ -1,1 +1,7 @@
 node_modules
+.DS_Store
+proving.key
+verification.key
+abi.json
+verifier.sol
+out
