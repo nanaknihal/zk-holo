@@ -3,24 +3,33 @@ import "hashes/sha256/sha256"
  *numBlocks (i.e., jwtLengthInBits % 512 hopefully this is constant and there isn't much variability in JWT length!)
  * aud (e.g., byte representation of ","*/
 
-// for i in 0..S do
-//     paddedJwt[start + i] == paddedSub[i]
-// def hasSubstringAt<N,S>(u32[N] fullString, u32[S] subString, u32 idx):
-// 	//for u32 i in 1..S do
-// 	//	r[i] = fullString[idx + i]
-// 	//endfor
+// TODO : unit test all functions and integration main
+def hasSubstringAt<N,S>(u32[N] fullString, u32[S] subString, u32 idx):
+	// for u32 i in 1..S do
+	// 	r[i] = fullString[idx + i]
+	// endfor
 	
-// 	u32[S] r = fullString[idx..idx+S]
-// 	assert(r == subString)
-// 	return
-//  New plan: to show sub, give private u32[S] paddedSub, private u32 subIdxStart
-// Instead of for loop, do paddedSub[S] = paddedJwt[subIdxStart..]
-def checkJwt<N,A,S>(private u32[N][16] paddedJwt, u32[8] jwtHash, u32[N][16] maskAud, private u32[N][16] maskSub, private u32[N][16] maskExp, private u32[A] paddedAud, private u32[S] paddedSub, private u32 exp, u32 expGreaterThan) -> bool: //allow JWT up to 512 bits
+	u32[S] r = fullString[idx..idx+S]
+	assert(r == subString)
+	return
+
+// Check that a mask is a series of 1s followed by a series of 0s
+def checkMask<M>(private bool[M] mask, private u32 numOnes):
+  bool validMask = true // Problem initializing this as true if input is length 0 or execution terminates early (i don't think early termination is possible nor would input length be accepted as 0)?
+  bool doneWithOnes = false
+  for u32 i in 0..M do
+    doneWithOnes = doneWithOnes || (!mask[i])
+    validMask = validMask && (doneWithOnes ? (!mask[i]) : (mask[i]) )
+  endfor
+  assert(validMask)
+  return
+  
+def checkJwt<N,A,S>(private u32[N][16] paddedJwt, u32[8] jwtHash, private u8[A] aud, private u32 audIdx, private u8[S] paddedSub, u32 subIdx, private u8[S] subMask, private u32 subMaskOneIdx, u32 expGreaterThan, private u32[1][1] expIdx) -> bool: //allow JWT up to 512 bits
   // Check that preimage is valid
   assert(sha256(paddedJwt) == jwtHash)
   // Loop through padded jwt and get the aud, sub, and exp claims
 
-  // Flatten the input 
+  // Flatten the input (should it be separate function for unit testing?)
   u32[16*N] flattened = [0; N * 16]
   u32 iTimes16 = 0
   for u32 i in 0..N do
@@ -29,6 +38,8 @@ def checkJwt<N,A,S>(private u32[N][16] paddedJwt, u32[8] jwtHash, u32[N][16] mas
       flattened[iTimes16+j] = paddedJwt[i][j]
     endfor
   endfor
+
+  //assert(hasSubstringAt(flattened, padded))
 
   // u32 audPosition = 0
   // bool audEquals = true // Is initializing these to true unsafe to certain attacks?
@@ -56,6 +67,5 @@ def checkJwt<N,A,S>(private u32[N][16] paddedJwt, u32[8] jwtHash, u32[N][16] mas
   return true
 
 
-// [1][16] : here, N = 1. can do any N, e.g., [19][16] iff all inputs are of same length
-def main(private u32[1][16] paddedJwt, u32[8] jwtHash, u32[1][16] maskAud, private u32[1][16] maskSub, private u32[1][16] maskExp, private u32[4] paddedAud, private u32[2] paddedSub, private u32 exp, u32 expGreaterThan) -> bool:
-    return checkJwt(paddedJwt, jwtHash, maskAud, maskSub, maskExp, paddedAud, paddedSub, exp, expGreaterThan)
+def main(private u32[1][16] paddedJwt, u32[8] jwtHash, private u8[11] aud, private u32 audIdx, private u8[64] paddedSub, private u32 subIdx, private u8[64] subMask, private u32 subMaskOneIdx, u32 expGreaterThan, private u32[1][1] expIdx) -> bool:
+    return checkJwt(paddedJwt, jwtHash, aud, audIdx, paddedSub, subIdx, subMask, subMaskOneIdx, expGreaterThan, expIdx)
