@@ -48,7 +48,7 @@ def checkMask<M>(u8[M] mask) -> bool:
     nChanges = (mask[i-1] != mask[i]) ? nChanges+1 : nChanges
     valid = valid && ((mask[i] != 255) || (mask[i] != 0))
   endfor
-  return valid && ((nChanges == 0) || (nChanges == 1) || (nChanges == 2))
+  return valid && ((nChanges == 1) || (nChanges == 2))
   
 
 // Check that a mask is a series of 1s followed by a series of 0s
