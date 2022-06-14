@@ -1,6 +1,6 @@
-from "./root.zok" import checkMask
+from "./root.zok" import checkMask, maskString
 
-def testMasking() -> bool:
+def testCheckMask() -> bool:
     // Valid mask with 1s followed by 0s followed by 1s
     assert(checkMask([255, 0, 255]))
     // Valid mask with 1s followed by 0s followed by 1s
@@ -32,13 +32,18 @@ def testMasking() -> bool:
 
     // Invalid mask with too many flips between 0s and 255s
     assert(!checkMask([0, 0, 255, 255, 0, 255]))
-    
-    
-
-    // 
 
     return true
 
+
+def testMaskString() -> bool:
+    assert(maskString([1,2,3],[0,0,0]) == [0,0,0])
+    assert(maskString([0,0,0],[1,0,1]) == [0,0,0])
+    assert(maskString([1,2,3],[255,255,255]) == [1,2,3])
+    assert(maskString([1,2,3],[255,0,255]) == [1,0,3])
+    return true
+
 def main(): 
-    bool a = testMasking()
+    bool a = testCheckMask()
+    bool b = testMaskString()
     return
