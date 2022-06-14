@@ -1,38 +1,47 @@
 import "hashes/sha256/sha256"
-// import "utils/casts/u32_array_to_bool_array" as u32ArrToBoolArr
+from "EMBED" import u8_from_bits as u8FromBits
 from "EMBED" import u32_to_bits as u32ToBits
 
 // TODO : unit test all functions and integration main
 
-def hasSubstringAtBytes<F,S>(u8[F] fullString, u8[S] subString, u32 idx) -> bool:
+def substringAt<F,S>(u8[F] fullString, u32 idx) -> u8[S]:
 	u8[S] r = [0; S]
   for u32 i in 0..S do
     r[i] = fullString[idx + i]
 	endfor
+  return r
+  
+def hasSubstringAt<F,S>(u8[F] fullString, u8[S] subString, u32 idx) -> bool:
+	u8[S] r = substringAt(fullString, idx)
   return (r == subString)
 
 // NOTE : HUGE constraint number when this is executed
-def hasSubstringAt<F,S>(bool[F] fullString, bool[S] subString, u32 idx) -> bool:
-	bool[S] r = [false; S]
-  for u32 i in 0..S do
-		r[i] = fullString[idx+i]
-	endfor
-  return (r == subString)
+// def hasSubstringAt<F,S>(bool[F] fullString, bool[S] subString, u32 idx) -> bool:
+// 	bool[S] r = [false; S]
+//   for u32 i in 0..S do
+// 		r[i] = fullString[idx+i]
+// 	endfor
+//   return (r == subString)
 
-def maskString<L>(bool[L] str, bool[L] mask) -> bool:
-	// bool[S] r = fullString[idx..idx+S]
-	return true //(r == subString)
+def maskString<L>(u8[L] str, u8[L] mask) -> u8[L]:
+	u8[L] masked = [0; L]
+  for u32 i in 0..L do
+    masked[i] = mask[i] & str[i]
+  endfor
+	return masked //(r == subString)
 
 // Check that a mask for a continuous string: it is a string of optional 0 bits followed by a string 1 bits, optionally followed by a series of x bits. In other words, mask[i] xor mask[i+1] should only be 1 in at most 2 places
-def checkMask<M>(bool[M] mask) -> bool:
-  u32 nChanges = 0
-  for u32 i in 1..M do
-    nChanges = (mask[i-1] != mask[i]) ? nChanges+1 : nChanges
-  endfor
-  return ((nChanges == 0) || (nChanges == 1) || (nChanges == 2))
+// def checkMask<M>(bool[M] mask) -> bool:
+//   u32 nChanges = 0
+//   for u32 i in 1..M do
+//     nChanges = (mask[i-1] != mask[i]) ? nChanges+1 : nChanges
+//   endfor
+//   return ((nChanges == 0) || (nChanges == 1) || (nChanges == 2))
+
+
 
 // Checks masks, but where bytes are the unit of information, and bytes are set to all 1 or all 0
-def checkMaskBytes<M>(u8[M] mask) -> bool:
+def checkMask<M>(u8[M] mask) -> bool:
   u32 nChanges = 0
   bool valid = ((mask[0] != 255) || (mask[0] != 0)) // Track whether all bytes are 255 or 0
   for u32 i in 1..M do
@@ -53,55 +62,75 @@ def checkMaskBytes<M>(u8[M] mask) -> bool:
 //   endfor
 //   return validMask
 
-def checkExp<N>(private u32[N][16] paddedJwt, u32 expGreaterThan, private u32[2] expIdx):
-  assert(paddedJwt[expIdx[0]][expIdx[1]] > expGreaterThan)
-  return
+def checkExp<N>(u32[N][16] paddedJwt, u32 expGreaterThan, u32[2] expIdx) -> bool:
+  return paddedJwt[expIdx[0]][expIdx[1]] > expGreaterThan
 
-def checkAud<F,A>(private bool[F] flattenedJwt, bool[A] aud, u32 audIdx) -> bool:
-  assert(hasSubstringAt(flattenedJwt, aud, audIdx))
-  return true
+// def checkAud<F,A>(private bool[F] flattenedJwt, bool[A] aud, u32 audIdx) -> bool:
+//   assert(hasSubstringAt(flattenedJwt, aud, audIdx))
+//   return true
 
-def checkSub<F,S>(private bool[F] flattenedJwt, bool[S] paddedSub, bool[S] subMask, u32 subIdx, u32 onesInSubMask) -> bool:
-  assert(checkMask(subMask))
-  bool[S] maskedSection = [false; S]
-  for u32 i in 0..S do
-    maskedSection[i] = flattenedJwt[subIdx+i] && subMask[i]
-  endfor
-  assert(maskedSection == subMask)
-  return true
+// def checkSub<F,S>(private bool[F] flattenedJwt, bool[S] extendedSub, bool[S] subMask, u32 subIdx, u32 onesInSubMask) -> bool:
+//   assert(checkMask(subMask))
+//   bool[S] maskedSection = [false; S]
+//   for u32 i in 0..S do
+//     maskedSection[i] = flattenedJwt[subIdx+i] && subMask[i]
+//   endfor
+//   assert(maskedSection == subMask)
+//   return true
 
-def checkJwt<N,A,S>(private u32[N][16] paddedJwt, u32[8] jwtHash, private bool[A] aud, private u32 audIdx, private bool[S] paddedSub, u32 subIdx, private bool[S] subMask, private u32 onesInSubMask, u32 expGreaterThan, private u32[2] expIdx) -> bool: //allow JWT up to 512 bits
+def checkJwt<N,A,S>(u32[N][16] paddedJwt, u32[8] jwtHash, u8[A] aud, u32 audIdx, u8[S] extendedSub, u8[S] maskedSub, u32 subIdx, private u8[S] subMask, private u32 onesInSubMask, u32 expGreaterThan, private u32[2] expIdx) -> bool: //allow JWT up to 512 bits
   // Check that preimage is valid
   assert(sha256(paddedJwt) == jwtHash)
   // Loop through padded jwt and get the aud, sub, and exp claims
 
   // Flatten the input (should it be separate function for unit testing?)
   //u32[N*16] flattened = [0; N*16]
-  bool[N*512] flattened = [false; 512]
+  // Flattening to bits:
+  // bool[N*512] flattened = [false; 512]
+  // u32 iTimes16 = 0
+  // u32 iTimes16TimesJTimes32 = 0
+  // for u32 i in 0..N do
+  //   iTimes16 = i * 16
+  //   for u32 j in 0..16 do
+  //     iTimes16TimesJTimes32 = iTimes16 * j * 32
+  //     bool[32] newBits= u32ToBits(paddedJwt[i][j])
+  //     for u32 k in 0..32 do
+  //       flattened[iTimes16TimesJTimes32+k] = newBits[k]
+  //     endfor
+  //   endfor
+  // endfor
+
+  // Flattening to bytes:
+  u8[N*128] flattened = [0; 128]
   u32 iTimes16 = 0
-  u32 iTimes16TimesJTimes32 = 0
+  // u32 iTimes16TimesJTimes8 = 0
   for u32 i in 0..N do
     iTimes16 = i * 16
     for u32 j in 0..16 do
-      iTimes16TimesJTimes32 = iTimes16 * j * 32
-      bool[32] newBytes = u32ToBits(paddedJwt[i][j])
-      for u32 k in 0..32 do
-        flattened[iTimes16TimesJTimes32+k] = newBytes[k]
-      endfor
+      // iTimes16TimesJTimes8 = iTimes16 * j * 8
+      bool[32] newBits = u32ToBits(paddedJwt[i][j])
+      flattened[iTimes16] = u8FromBits(newBits[0..8])  
+      flattened[iTimes16+8] = u8FromBits(newBits[8..16])
+      flattened[iTimes16+16] = u8FromBits(newBits[16..24])  
+      flattened[iTimes16+24] = u8FromBits(newBits[24..32])        
     endfor
   endfor
 
+
   // This costs 150k constraints
   // bool abc = checkAud(flattened, aud, audIdx)
-  // bool bcd = checkSub(flattened, paddedSub, subMask, subIdx, onesInSubMask)
-  // NOTE : This is destructive; it changes flattened
+  // bool bcd = checkSub(flattened, extendedSub, subMask, subIdx, onesInSubMask)
   
+  assert(hasSubstringAt(flattened, aud, audIdx))
+  assert(maskString(extendedSub, subMask) == maskedSub)
+  assert(hasSubstringAt(flattened, extendedSub, subIdx))
   assert(checkMask(subMask)) 
+  assert(checkExp(paddedJwt, expGreaterThan, expIdx))
   // assert(checkMask2(subMask, onesInSubMask))
 
 
 
-  //assert(hasSubstringAt(flattened, padded))
+  // assert(hasSubstringAt(flattened, padded))
 
   // u32 audPosition = 0
   // bool audEquals = true // Is initializing these to true unsafe to certain attacks?
@@ -121,26 +150,26 @@ def checkJwt<N,A,S>(private u32[N][16] paddedJwt, u32[8] jwtHash, private bool[A
   //       expPosition = ((expMasked == 0) && (expPosition == 0) )? 0 : (expPosition + 1)
   //       // Note that position is one-indexed; it is 0 before the aud/sub/exp starts and 1 for the aud/sub/exp's first byte
   //       audEquals = (audPosition < A) ? (audEquals && (audMasked == paddedAud[audPosition])) : audEquals
-  //       subEquals = (subPosition < S) ? (subEquals && (subMasked == paddedSub[subPosition])) : subEquals
+  //       subEquals = (subPosition < S) ? (subEquals && (subMasked == extendedSub[subPosition])) : subEquals
   //       expEquals = (expPosition == 1) ? (expMasked == exp) : expEquals
         
   //   endfor
   //  endfor
   return true
 
-def testSubstringBytes<A,B>(u8[A] fullString, u8[B] subString, u32 idx) -> bool:
-  return hasSubstringAtBytes(fullString, subString, idx)
+// def testSubstringBytes<A,B>(u8[A] fullString, u8[B] subString, u32 idx) -> bool:
+//   return hasSubstringAt(fullString, subString, idx)
 
-def testSubstring<A,B>(bool[A] fullString, bool[B] subString, u32 idx) -> bool:
-  return hasSubstringAt(fullString, subString, idx)
+// def testSubstring<A,B>(bool[A] fullString, bool[B] subString, u32 idx) -> bool:
+//   return hasSubstringAt(fullString, subString, idx)
 
 
-def main(u8[64] testSubMask, bool[1024] testfull, bool[512] testsub, u32 testidx, u8[128] testfull2, u8[64] testsub2, u32 testidx2, private u32[1][16] paddedJwt, u32[8] jwtHash, private bool[139] aud, private u32 audIdx, private bool[512] paddedSub, private u32 subIdx, private bool[512] subMask, private u32 onesInSubMask, u32 expGreaterThan, private u32[2] expIdx) -> bool:
+def main(private u32[1][16] paddedJwt, u32[8] jwtHash, private u8[17] aud, private u32 audIdx, private u8[64] extendedSub, u8[64] maskedSub, private u32 subIdx, private u8[64] subMask, private u32 onesInSubMask, u32 expGreaterThan, private u32[2] expIdx) -> bool:
     // testSubstringBytes is faster 
-    bool abc = testSubstringBytes(testfull2, testsub2, testidx2)
+    // bool abc = testSubstringBytes(testfull2, testsub2, testidx2)
     // bool abc = testSubstring(testfull, testsub, testidx)
 
     // Checking by bytes is faster
     // bool bcd = checkMask(subMask)
     // bool bcd = checkMaskBytes(testSubMask)
-    return checkJwt(paddedJwt, jwtHash, aud, audIdx, paddedSub, subIdx, subMask, onesInSubMask, expGreaterThan, expIdx)
+    return checkJwt(paddedJwt, jwtHash, aud, audIdx, extendedSub, maskedSub, subIdx, subMask, onesInSubMask, expGreaterThan, expIdx)
