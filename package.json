@@ -10,7 +10,7 @@
   "scripts": {
     "compile" : "zokrates compile -i root.zok",
     "build" : "npm run compile && zokrates setup && zokrates export-verifier",
-    "test": "sh test/test.sh"
+    "test": "zokrates compile -i test.zok"
   },
   "repository": {
     "type": "git",

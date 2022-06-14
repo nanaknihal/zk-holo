@@ -1,0 +1,16 @@
+from "./root.zok" import checkMask
+
+def testMasking() -> bool:
+    // invalid mask with all 1s
+    assert(!checkMask([255, 255, 255, 255, 255, 255]))
+    // invalid mask with all 0s
+    assert(!checkMask([0, 0, 0, 0, 0, 0]))
+
+    // TODO: figure out what should happen if empty mask or masr
+    // Invalid mask
+    assert(!checkMask([0,1,2,3,6]))
+    return true
+
+def main(): 
+    bool a = testMasking()
+    return
