@@ -1,43 +1,88 @@
 import "hashes/sha256/sha256"
-/* Requires application-specific parameters: 
- *numBlocks (i.e., jwtLengthInBits % 512 hopefully this is constant and there isn't much variability in JWT length!)
- * aud (e.g., byte representation of ","*/
+// import "utils/casts/u32_array_to_bool_array" as u32ArrToBoolArr
+from "EMBED" import u32_to_bits as u32ToBits
 
 // TODO : unit test all functions and integration main
-def hasSubstringAt<N,S>(u32[N] fullString, u32[S] subString, u32 idx):
-	// for u32 i in 1..S do
-	// 	r[i] = fullString[idx + i]
-	// endfor
-	
-	u32[S] r = fullString[idx..idx+S]
-	assert(r == subString)
-	return
+
+// NOTE : HUGE constraint number when this is executed
+def hasSubstringAt<F,S>(bool[F] fullString, bool[S] subString, u32 idx) -> bool:
+	bool[S] r = [false; S]
+  for u32 i in 0..S do
+		r[i] = fullString[idx+i]
+	endfor
+  return (r == subString)
+
+def maskString<L>(bool[L] str, bool[L] mask) -> bool:
+	// bool[S] r = fullString[idx..idx+S]
+	return true //(r == subString)
+
+// Check that a mask for a continuous string: it is a string of optional 0 bits followed by a string 1 bits, optionally followed by a series of x bits. In other words, mask[i] xor mask[i+1] should only be 1 in at most 2 places
+def checkMask<M>(bool[M] mask) -> bool:
+  u32 nChanges = 0
+  for u32 i in 1..M do
+    nChanges = (mask[i-1] != mask[i]) ? nChanges+1 : nChanges
+  endfor
+  return ((nChanges == 0) || (nChanges == 1) || (nChanges == 2))
+    
 
 // Check that a mask is a series of 1s followed by a series of 0s
-def checkMask<M>(private bool[M] mask, private u32 numOnes):
-  bool validMask = true // Problem initializing this as true if input is length 0 or execution terminates early (i don't think early termination is possible nor would input length be accepted as 0)?
-  bool doneWithOnes = false
-  for u32 i in 0..M do
-    doneWithOnes = doneWithOnes || (!mask[i])
-    validMask = validMask && (doneWithOnes ? (!mask[i]) : (mask[i]) )
-  endfor
-  assert(validMask)
+// this only works for some types of masks requires more constraints. Thus, it should be deprecated
+// def checkMask2<M>(private bool[M] mask, private u32 numOnes) -> bool:
+//   bool validMask = true // Problem initializing this as true if input is length 0 or execution terminates early (i don't think early termination is possible nor would input length be accepted as 0)?
+//   bool doneWithOnes = false
+//   for u32 i in 0..M do
+//     doneWithOnes = doneWithOnes || (!mask[i])
+//     validMask = validMask && (doneWithOnes ? (!mask[i]) : (mask[i]) )
+//   endfor
+//   return validMask
+
+def checkExp<N>(private u32[N][16] paddedJwt, u32 expGreaterThan, private u32[2] expIdx):
+  assert(paddedJwt[expIdx[0]][expIdx[1]] > expGreaterThan)
   return
-  
-def checkJwt<N,A,S>(private u32[N][16] paddedJwt, u32[8] jwtHash, private u8[A] aud, private u32 audIdx, private u8[S] paddedSub, u32 subIdx, private u8[S] subMask, private u32 subMaskOneIdx, u32 expGreaterThan, private u32[1][1] expIdx) -> bool: //allow JWT up to 512 bits
+
+def checkAud<F,A>(private bool[F] flattenedJwt, bool[A] aud, u32 audIdx) -> bool:
+  assert(hasSubstringAt(flattenedJwt, aud, audIdx))
+  return true
+
+def checkSub<F,S>(private bool[F] flattenedJwt, bool[S] paddedSub, bool[S] subMask, u32 subIdx, u32 onesInSubMask) -> bool:
+  assert(checkMask(subMask))
+  bool[S] maskedSection = [false; S]
+  for u32 i in 0..S do
+    maskedSection[i] = flattenedJwt[subIdx+i] && subMask[i]
+  endfor
+  assert(maskedSection == subMask)
+  return true
+
+def checkJwt<N,A,S>(private u32[N][16] paddedJwt, u32[8] jwtHash, private bool[A] aud, private u32 audIdx, private bool[S] paddedSub, u32 subIdx, private bool[S] subMask, private u32 onesInSubMask, u32 expGreaterThan, private u32[2] expIdx) -> bool: //allow JWT up to 512 bits
   // Check that preimage is valid
   assert(sha256(paddedJwt) == jwtHash)
   // Loop through padded jwt and get the aud, sub, and exp claims
 
   // Flatten the input (should it be separate function for unit testing?)
-  u32[16*N] flattened = [0; N * 16]
+  //u32[N*16] flattened = [0; N*16]
+  bool[N*512] flattened = [false; 512]
   u32 iTimes16 = 0
+  u32 iTimes16TimesJTimes32 = 0
   for u32 i in 0..N do
     iTimes16 = i * 16
     for u32 j in 0..16 do
-      flattened[iTimes16+j] = paddedJwt[i][j]
+      iTimes16TimesJTimes32 = iTimes16 * j * 32
+      bool[32] newBytes = u32ToBits(paddedJwt[i][j])
+      for u32 k in 0..32 do
+        flattened[iTimes16TimesJTimes32+k] = newBytes[k]
+      endfor
     endfor
   endfor
+
+  // This costs 150k constraints
+  // bool abc = checkAud(flattened, aud, audIdx)
+  // bool bcd = checkSub(flattened, paddedSub, subMask, subIdx, onesInSubMask)
+  // NOTE : This is destructive; it changes flattened
+
+  assert(checkMask(subMask)) 
+  // assert(checkMask2(subMask, onesInSubMask))
+
+
 
   //assert(hasSubstringAt(flattened, padded))
 
@@ -67,5 +112,5 @@ def checkJwt<N,A,S>(private u32[N][16] paddedJwt, u32[8] jwtHash, private u8[A] 
   return true
 
 
-def main(private u32[1][16] paddedJwt, u32[8] jwtHash, private u8[11] aud, private u32 audIdx, private u8[64] paddedSub, private u32 subIdx, private u8[64] subMask, private u32 subMaskOneIdx, u32 expGreaterThan, private u32[1][1] expIdx) -> bool:
-    return checkJwt(paddedJwt, jwtHash, aud, audIdx, paddedSub, subIdx, subMask, subMaskOneIdx, expGreaterThan, expIdx)
+def main(private u32[1][16] paddedJwt, u32[8] jwtHash, private bool[139] aud, private u32 audIdx, private bool[512] paddedSub, private u32 subIdx, private bool[512] subMask, private u32 onesInSubMask, u32 expGreaterThan, private u32[2] expIdx) -> bool:
+    return checkJwt(paddedJwt, jwtHash, aud, audIdx, paddedSub, subIdx, subMask, onesInSubMask, expGreaterThan, expIdx)
