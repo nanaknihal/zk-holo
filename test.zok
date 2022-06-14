@@ -1,14 +1,42 @@
 from "./root.zok" import checkMask
 
 def testMasking() -> bool:
+    // Valid mask with 1s followed by 0s followed by 1s
+    assert(checkMask([255, 0, 255]))
+    // Valid mask with 1s followed by 0s followed by 1s
+    assert(checkMask([255, 255, 255, 0, 255]))
+    // Valid mask with 1s followed by 0s followed by 1s
+    assert(checkMask([255, 255, 255, 0, 0, 0, 0, 255, 255]))
+
+    // Valid masks with 1s followed by 0s
+    assert(checkMask([1,0]))
+    assert(checkMask([1,1,0]))
+    assert(checkMask([1,0,0]))
+
+    /* Should these b valid? I don't c ynot nor do i c y */
+    // Valid mask with 0s followed by 1s followed by 0s
+    assert(checkMask([0, 255, 0, 0]))
+    // Valid masks with 0s followed by 1s
+    assert(checkMask([0,1]))
+    assert(checkMask([0,0,1]))
+    assert(checkMask([0,1,1]))
+
+
     // invalid mask with all 1s
     assert(!checkMask([255, 255, 255, 255, 255, 255]))
     // invalid mask with all 0s
     assert(!checkMask([0, 0, 0, 0, 0, 0]))
 
-    // TODO: figure out what should happen if empty mask or masr
-    // Invalid mask
+    // Invalid mask with bytes that neither 255 nor 0
     assert(!checkMask([0,1,2,3,6]))
+
+    // Invalid mask with too many flips between 0s and 255s
+    assert(!checkMask([0, 0, 255, 255, 0, 255]))
+    
+    
+
+    // 
+
     return true
 
 def main(): 
