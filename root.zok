@@ -4,6 +4,13 @@ from "EMBED" import u32_to_bits as u32ToBits
 
 // TODO : unit test all functions and integration main
 
+def hasSubstringAtBytes<F,S>(u8[F] fullString, u8[S] subString, u32 idx) -> bool:
+	u8[S] r = [0; S]
+  for u32 i in 0..S do
+    r[i] = fullString[idx + i]
+	endfor
+  return (r == subString)
+
 // NOTE : HUGE constraint number when this is executed
 def hasSubstringAt<F,S>(bool[F] fullString, bool[S] subString, u32 idx) -> bool:
 	bool[S] r = [false; S]
@@ -23,7 +30,17 @@ def checkMask<M>(bool[M] mask) -> bool:
     nChanges = (mask[i-1] != mask[i]) ? nChanges+1 : nChanges
   endfor
   return ((nChanges == 0) || (nChanges == 1) || (nChanges == 2))
-    
+
+// Checks masks, but where bytes are the unit of information, and bytes are set to all 1 or all 0
+def checkMaskBytes<M>(u8[M] mask) -> bool:
+  u32 nChanges = 0
+  bool valid = ((mask[0] != 255) || (mask[0] != 0)) // Track whether all bytes are 255 or 0
+  for u32 i in 1..M do
+    nChanges = (mask[i-1] != mask[i]) ? nChanges+1 : nChanges
+    valid = valid && ((mask[i] != 255) || (mask[i] != 0))
+  endfor
+  return valid && ((nChanges == 0) || (nChanges == 1) || (nChanges == 2))
+  
 
 // Check that a mask is a series of 1s followed by a series of 0s
 // this only works for some types of masks requires more constraints. Thus, it should be deprecated
@@ -78,7 +95,7 @@ def checkJwt<N,A,S>(private u32[N][16] paddedJwt, u32[8] jwtHash, private bool[A
   // bool abc = checkAud(flattened, aud, audIdx)
   // bool bcd = checkSub(flattened, paddedSub, subMask, subIdx, onesInSubMask)
   // NOTE : This is destructive; it changes flattened
-
+  
   assert(checkMask(subMask)) 
   // assert(checkMask2(subMask, onesInSubMask))
 
@@ -111,6 +128,19 @@ def checkJwt<N,A,S>(private u32[N][16] paddedJwt, u32[8] jwtHash, private bool[A
   //  endfor
   return true
 
+def testSubstringBytes<A,B>(u8[A] fullString, u8[B] subString, u32 idx) -> bool:
+  return hasSubstringAtBytes(fullString, subString, idx)
 
-def main(private u32[1][16] paddedJwt, u32[8] jwtHash, private bool[139] aud, private u32 audIdx, private bool[512] paddedSub, private u32 subIdx, private bool[512] subMask, private u32 onesInSubMask, u32 expGreaterThan, private u32[2] expIdx) -> bool:
+def testSubstring<A,B>(bool[A] fullString, bool[B] subString, u32 idx) -> bool:
+  return hasSubstringAt(fullString, subString, idx)
+
+
+def main(u8[64] testSubMask, bool[1024] testfull, bool[512] testsub, u32 testidx, u8[128] testfull2, u8[64] testsub2, u32 testidx2, private u32[1][16] paddedJwt, u32[8] jwtHash, private bool[139] aud, private u32 audIdx, private bool[512] paddedSub, private u32 subIdx, private bool[512] subMask, private u32 onesInSubMask, u32 expGreaterThan, private u32[2] expIdx) -> bool:
+    // testSubstringBytes is faster 
+    bool abc = testSubstringBytes(testfull2, testsub2, testidx2)
+    // bool abc = testSubstring(testfull, testsub, testidx)
+
+    // Checking by bytes is faster
+    // bool bcd = checkMask(subMask)
+    // bool bcd = checkMaskBytes(testSubMask)
     return checkJwt(paddedJwt, jwtHash, aud, audIdx, paddedSub, subIdx, subMask, onesInSubMask, expGreaterThan, expIdx)
