@@ -44,7 +44,7 @@ def testMaskString() -> bool:
     return true
 
 def testSubstringAt() -> bool:
-    assert(substringAt::<3,2>([30,42,69], 1)== [42,69])
+    assert(substringAt::<3,2>([30,42,69], 1) == [42,69])
     assert(substringAt::<4,4>([30,42,69,255], 0) == [30,42,69,255])
     assert(substringAt::<4,2>([30,42,69,255], 0) == [30,42])
     assert(substringAt::<2,1>([67,69], 1) == [69])
@@ -53,6 +53,12 @@ def testSubstringAt() -> bool:
     return true
 
 def testHasSubstringAt() -> bool:
+    assert(hasSubstringAt([30,42,69], [42,69], 1))
+    assert(!hasSubstringAt([30,40,69], [42,69], 1))
+    assert(hasSubstringAt([42], [42], 0))
+    assert(hasSubstringAt([42,69], [42], 0))
+    assert(!hasSubstringAt([42,69], [67], 1))
+    assert(!hasSubstringAt([42], [43], 0))
     return true
 
 def testCheckAud() -> bool:
