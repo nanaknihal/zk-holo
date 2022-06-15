@@ -1,4 +1,4 @@
-from "./root.zok" import checkMask, maskString, substringAt, hasSubstringAt //, checkAud, checkExp, checkSub, checkJwt
+from "./root.zok" import checkMask, maskString, substringAt, hasSubstringAt, checkExp //, checkAud, checkExp, checkSub, checkJwt
 
 def testCheckMask() -> bool:
     // Valid mask with 1s followed by 0s followed by 1s
@@ -68,6 +68,11 @@ def testCheckSub() -> bool:
     return true
 
 def testCheckExp() -> bool:
+    assert(checkExp([[0,1,2,5,8,69,103032949,1655252511,8000,3,9,1,69,10,3, 69]], 1655252510, [0,7]))
+    assert(!checkExp([[0,1,2,5,8,69,103032949,1655252511,8000,3,9,1,69,10,3, 69]], 1655252512, [0,7]))
+    assert(!checkExp([[0,1,2,5,8,69,103032949,1655252511,8000,3,9,1,69,10,3, 69]], 1655252510, [0,6]))
+    assert(!checkExp([[0,1,2,5,8,69,103032949,1655252511,8000,3,9,1,69,10,3, 69], [0,1,2,5,8,69,103032949,1655252509,8000,3,9,1,69,10,3, 69]], 1655252510, [1,7]))
+    assert(checkExp([[0,1,2,5,8,69,103032949,1655252511,8000,3,9,1,69,10,3, 69], [0,1,2,5,8,69,103032949,1655252590,8000,3,9,1,69,10,3, 69]], 1655252510, [1,7]))
     return true
 
 def testCheckJwt() -> bool:
