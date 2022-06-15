@@ -2,8 +2,7 @@ import "hashes/sha256/sha256"
 from "EMBED" import u8_from_bits as u8FromBits
 from "EMBED" import u32_to_bits as u32ToBits
 
-// TODO : unit test all functions and integration main
-
+// returns a substring of length S, starting at fullString[idx]
 def substringAt<F,S>(u8[F] fullString, u32 idx) -> u8[S]:
 	u8[S] r = [0; S]
   for u32 i in 0..S do
@@ -11,12 +10,13 @@ def substringAt<F,S>(u8[F] fullString, u32 idx) -> u8[S]:
 	endfor
   return r
 
-  
+// checks whether the substring of length S starting at fullstring[idx] matches `subString`
 def hasSubstringAt<F,S>(u8[F] fullString, u8[S] subString, u32 idx) -> bool:
 	u8[S] r = substringAt(fullString, idx)
   return (r == subString)
 
 
+// applies `mask` to `str`. returns str & mask bitwise and for every element of the string/mask
 def maskString<L>(u8[L] str, u8[L] mask) -> u8[L]:
 	u8[L] masked = [0; L]
   for u32 i in 0..L do
@@ -36,10 +36,12 @@ def checkMask<M>(u8[M] mask) -> bool:
   return valid && ((nChanges == 1) || (nChanges == 2))
 
 
+// Checks a substring in flattened starting at audIdx equals a public input, the aud claim
 def checkAud<F,A>(u8[F] flattened, u8[A] aud, u32 audIdx) -> bool:
   return hasSubstringAt(flattened, aud, audIdx)
 
 
+// Checks a JWT's exp claim at expIdx. expIdx should be private but expGreaterThan should be public
 def checkExp<N>(u32[N][16] paddedJwt, u32 expGreaterThan, u32[2] expIdx) -> bool:
   return paddedJwt[expIdx[0]][expIdx[1]] > expGreaterThan
 
@@ -76,10 +78,8 @@ def checkJwt<N,A,S>(u32[N][16] paddedJwt, u32[8] jwtHash, u8[A] aud, u32 audIdx,
   assert(sha256(paddedJwt) == jwtHash)
 
   // Flatten to bytes to search for aud, sub, and exp substring
-  u8[N*128] flattened = flattenedToBytes(paddedJwt)
-
-  
-  return checkAud(flattened, aud, audIdx) && checkSub(flattened, extendedSub, subMask, maskedSub, subIdx) && checkExp(paddedJwt, expGreaterThan, expIdx)
+  u8[N*128] flattened = flattenedToBytes(paddedJwt)  
+  return checkAud(flattened, aud, audIdx)   &&    checkSub(flattened, extendedSub, subMask, maskedSub, subIdx)    &&    checkExp(paddedJwt, expGreaterThan, expIdx)
 
 
 
