@@ -1,4 +1,4 @@
-from "./root.zok" import checkMask, maskString, substringAt, hasSubstringAt, checkAud, checkExp, checkSub, checkJwt
+from "./root.zok" import checkMask, maskString, substringAt, hasSubstringAt //, checkAud, checkExp, checkSub, checkJwt
 
 def testCheckMask() -> bool:
     // Valid mask with 1s followed by 0s followed by 1s
@@ -44,6 +44,12 @@ def testMaskString() -> bool:
     return true
 
 def testSubstringAt() -> bool:
+    assert(substringAt::<3,2>([30,42,69], 1)== [42,69])
+    assert(substringAt::<4,4>([30,42,69,255], 0) == [30,42,69,255])
+    assert(substringAt::<4,2>([30,42,69,255], 0) == [30,42])
+    assert(substringAt::<2,1>([67,69], 1) == [69])
+    assert(substringAt::<1,1>([42], 0) == [42])
+
     return true
 
 def testHasSubstringAt() -> bool:
@@ -60,6 +66,7 @@ def testCheckExp() -> bool:
 
 def testCheckJwt() -> bool:
     return true
+
 def main(): 
     bool z = testCheckMask()
     bool x = testMaskString()
