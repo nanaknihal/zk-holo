@@ -76,6 +76,24 @@ def checkExp<N>(u32[N][16] paddedJwt, u32 expGreaterThan, u32[2] expIdx) -> bool
 def checkSub<F,S>(u8[F] flattened, u8[S] extendedSub, u8[S] subMask, u8[S] maskedSub, u32 subIdx) -> bool:
   return ((maskString(extendedSub, subMask) == maskedSub) && checkMask(subMask) && hasSubstringAt(flattened, extendedSub, subIdx))
 
+// Flattening to bytes:
+def flattenedToBytes<N,F>(u32[N][16] nBy16Arr) -> u8[F]:
+  u8[N*128] flattened = [0; 128]
+  u32 iTimes16 = 0
+  // u32 iTimes16TimesJTimes8 = 0
+  for u32 i in 0..N do
+    iTimes16 = i * 16
+    for u32 j in 0..16 do
+      // iTimes16TimesJTimes8 = iTimes16 * j * 8
+      bool[32] newBits = u32ToBits(nBy16Arr[i][j])
+      flattened[iTimes16] = u8FromBits(newBits[0..8])  
+      flattened[iTimes16+8] = u8FromBits(newBits[8..16])
+      flattened[iTimes16+16] = u8FromBits(newBits[16..24])  
+      flattened[iTimes16+24] = u8FromBits(newBits[24..32])        
+    endfor
+  endfor
+  return flattened
+
 def checkJwt<N,A,S>(u32[N][16] paddedJwt, u32[8] jwtHash, u8[A] aud, u32 audIdx, u8[S] extendedSub, u8[S] maskedSub, u32 subIdx, private u8[S] subMask, private u32 onesInSubMask, u32 expGreaterThan, private u32[2] expIdx) -> bool: //allow JWT up to 512 bits
   // Check that preimage is valid
   assert(sha256(paddedJwt) == jwtHash)
@@ -99,26 +117,9 @@ def checkJwt<N,A,S>(u32[N][16] paddedJwt, u32[8] jwtHash, u8[A] aud, u32 audIdx,
   // endfor
 
   // Flattening to bytes:
-  u8[N*128] flattened = [0; 128]
-  u32 iTimes16 = 0
-  // u32 iTimes16TimesJTimes8 = 0
-  for u32 i in 0..N do
-    iTimes16 = i * 16
-    for u32 j in 0..16 do
-      // iTimes16TimesJTimes8 = iTimes16 * j * 8
-      bool[32] newBits = u32ToBits(paddedJwt[i][j])
-      flattened[iTimes16] = u8FromBits(newBits[0..8])  
-      flattened[iTimes16+8] = u8FromBits(newBits[8..16])
-      flattened[iTimes16+16] = u8FromBits(newBits[16..24])  
-      flattened[iTimes16+24] = u8FromBits(newBits[24..32])        
-    endfor
-  endfor
+  u8[N*128] flattened = flattenedToBytes(paddedJwt)
 
 
-  // This costs 150k constraints
-  // bool abc = checkAud(flattened, aud, audIdx)
-  // bool bcd = checkSub(flattened, extendedSub, subMask, subIdx, onesInSubMask)
-  
   assert(checkAud(flattened, aud, audIdx))
   assert(checkSub(flattened, extendedSub, subMask, maskedSub, subIdx)) 
   assert(checkExp(paddedJwt, expGreaterThan, expIdx))
