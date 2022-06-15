@@ -73,6 +73,10 @@ def testU32ToU8s() -> bool:
     return true
 
 def testCheckAud() -> bool:
+    assert( checkAud([69,12,144,6,140,1,0,9,12], [144,6,140], 2))
+    assert(!checkAud([69,12,169,6,140,1,0,9,12], [144,6,140], 2))
+    assert(!checkAud([69,12,169,6,140,1,0,9,12], [169,6,140], 1))
+    assert( checkAud([69,12,169,6,140,1,0,9,12], [169,6,140], 2))
     return true
 
 def testCheckSub() -> bool:
