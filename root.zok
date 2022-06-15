@@ -62,21 +62,19 @@ def checkMask<M>(u8[M] mask) -> bool:
 //   endfor
 //   return validMask
 
+
+def checkAud<F,A>(u8[F] flattened, u8[A] aud, u32 audIdx) -> bool:
+  return hasSubstringAt(flattened, aud, audIdx)
+
 def checkExp<N>(u32[N][16] paddedJwt, u32 expGreaterThan, u32[2] expIdx) -> bool:
   return paddedJwt[expIdx[0]][expIdx[1]] > expGreaterThan
 
-// def checkAud<F,A>(private bool[F] flattenedJwt, bool[A] aud, u32 audIdx) -> bool:
-//   assert(hasSubstringAt(flattenedJwt, aud, audIdx))
-//   return true
-
-// def checkSub<F,S>(private bool[F] flattenedJwt, bool[S] extendedSub, bool[S] subMask, u32 subIdx, u32 onesInSubMask) -> bool:
-//   assert(checkMask(subMask))
-//   bool[S] maskedSection = [false; S]
-//   for u32 i in 0..S do
-//     maskedSection[i] = flattenedJwt[subIdx+i] && subMask[i]
-//   endfor
-//   assert(maskedSection == subMask)
-//   return true
+// @param {extendedSub} the sub claim, plus the following extra characters up to length S for padding as inputs must be of fixed length
+// @param {subMask} since we don't want to reveal anything after sub, the mask is provided to mask sub with 1s and other bits with 0s
+// @param {maskedSub} this can be made public -- this is the sub claim followed by 0s until length S
+// @param {subIdx} this is where the the sub starts in flattened
+def checkSub<F,S>(u8[F] flattened, u8[S] extendedSub, u8[S] subMask, u8[S] maskedSub, u32 subIdx) -> bool:
+  return ((maskString(extendedSub, subMask) == maskedSub) && checkMask(subMask) && hasSubstringAt(flattened, extendedSub, subIdx))
 
 def checkJwt<N,A,S>(u32[N][16] paddedJwt, u32[8] jwtHash, u8[A] aud, u32 audIdx, u8[S] extendedSub, u8[S] maskedSub, u32 subIdx, private u8[S] subMask, private u32 onesInSubMask, u32 expGreaterThan, private u32[2] expIdx) -> bool: //allow JWT up to 512 bits
   // Check that preimage is valid
@@ -121,10 +119,8 @@ def checkJwt<N,A,S>(u32[N][16] paddedJwt, u32[8] jwtHash, u8[A] aud, u32 audIdx,
   // bool abc = checkAud(flattened, aud, audIdx)
   // bool bcd = checkSub(flattened, extendedSub, subMask, subIdx, onesInSubMask)
   
-  assert(hasSubstringAt(flattened, aud, audIdx))
-  assert(maskString(extendedSub, subMask) == maskedSub)
-  assert(hasSubstringAt(flattened, extendedSub, subIdx))
-  assert(checkMask(subMask)) 
+  assert(checkAud(flattened, aud, audIdx))
+  assert(checkSub(flattened, extendedSub, subMask, maskedSub, subIdx)) 
   assert(checkExp(paddedJwt, expGreaterThan, expIdx))
   // assert(checkMask2(subMask, onesInSubMask))
 
