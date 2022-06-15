@@ -1,4 +1,4 @@
-from "./root.zok" import checkMask, maskString, substringAt, hasSubstringAt, checkExp //, checkAud, checkExp, checkSub, checkJwt
+from "./root.zok" import flattenedToBytes, checkMask, maskString, substringAt, hasSubstringAt, checkAud, checkSub, checkExp, checkJwt
 
 def testCheckMask() -> bool:
     // Valid mask with 1s followed by 0s followed by 1s
@@ -61,6 +61,11 @@ def testHasSubstringAt() -> bool:
     assert(!hasSubstringAt([42], [43], 0))
     return true
 
+def testFlatten() -> bool:
+    assert(flattenedToBytes::<1,128>([[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]) == [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
+    assert(flattenedToBytes::<2,256>([[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]]) == [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
+    return true
+
 def testCheckAud() -> bool:
     return true
 
@@ -86,5 +91,6 @@ def main():
     bool b = testCheckAud()
     bool n = testCheckSub()
     bool m = testCheckExp()
+    bool a = testFlatten()
     bool qwertyuiopasdfghjkl = testCheckJwt()
     return
