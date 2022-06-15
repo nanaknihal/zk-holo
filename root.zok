@@ -55,7 +55,7 @@ def checkSub<F,S>(u8[F] flattened, u8[S] extendedSub, u8[S] subMask, u8[S] maske
 
 // Flatten a N*16 array of u32 to a 1-dimensional array of bytes
 def flattenedToBytes<N,F>(u32[N][16] nBy16Arr) -> u8[F]:
-  u8[N*128] flattened = [0; 128]
+  u8[N*128] flattened = [0; N*128]
   u32 iTimes16 = 0
   // u32 iTimes16TimesJTimes8 = 0
   for u32 i in 0..N do
