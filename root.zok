@@ -97,5 +97,5 @@ def checkJwt<N,A,S>(u32[N][16] paddedJwt, u32[8] jwtHash, u8[A] aud, u32 audIdx,
 
 
 
-def main(private u32[1][16] paddedJwt, u32[8] jwtHash, private u8[17] aud, private u32 audIdx, private u8[64] extendedSub, u8[64] maskedSub, private u32 subIdx, private u8[64] subMask, private u32 onesInSubMask, u32 expGreaterThan, private u32[2] expIdx) -> bool:
+def main(private u32[4][16] paddedJwt, u32[8] jwtHash, private u8[17] aud, private u32 audIdx, private u8[64] extendedSub, u8[64] maskedSub, private u32 subIdx, private u8[64] subMask, private u32 onesInSubMask, u32 expGreaterThan, private u32[2] expIdx) -> bool:
     return checkJwt(paddedJwt, jwtHash, aud, audIdx, extendedSub, maskedSub, subIdx, subMask, onesInSubMask, expGreaterThan, expIdx)
