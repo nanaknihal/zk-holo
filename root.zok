@@ -50,8 +50,9 @@ def checkExp<N>(u32[N][16] paddedJwt, u32 expGreaterThan, u32[2] expIdx) -> bool
 // @param {subMask} since we don't want to reveal anything after sub, the mask is provided to mask sub with 1s and other bits with 0s
 // @param {maskedSub} this can be made public -- this is the sub claim followed by 0s until length S
 // @param {subIdx} this is where the the sub starts in flattened
-def checkSub<F,S>(u8[F] flattened, u8[S] extendedSub, u8[S] subMask, u8[S] maskedSub, u32 subIdx) -> bool:
-  return ((maskString(extendedSub, subMask) == maskedSub) && checkMask(subMask) && hasSubstringAt(flattened, extendedSub, subIdx))
+def checkSub<F,S>(u8[F] flattened, u8[S] subMask, u8[S] maskedSub, u32 subIdx) -> bool:
+  u8[S] extendedSub = substringAt(flattened, subIdx)
+  return (maskString(extendedSub, subMask) == maskedSub) && (checkMask(subMask))
 
 // TODO : PR this to stdlib/utils/casts
 def u32sToU8s<N,E>(u32[N] u32s) -> u8[E]:
@@ -87,15 +88,15 @@ def flattenedToBytes<N,F>(u32[N][16] nBy16Arr) -> u8[F]:
 
 
 // Wrap everything together to check a JWT
-def checkJwt<N,A,S>(u32[N][16] paddedJwt, u32[8] jwtHash, u8[A] aud, u32 audIdx, u8[S] extendedSub, u8[S] maskedSub, u32 subIdx, private u8[S] subMask, private u32 onesInSubMask, u32 expGreaterThan, private u32[2] expIdx) -> bool: //allow JWT up to 512 bits
+def checkJwt<N,A,S>(u32[N][16] paddedJwt, u32[8] jwtHash, u8[A] aud, u32 audIdx, u8[S] maskedSub, u32 subIdx, private u8[S] subMask, private u32 onesInSubMask, u32 expGreaterThan, private u32[2] expIdx) -> bool: //allow JWT up to 512 bits
   // Check that preimage is valid
   assert(sha256(paddedJwt) == jwtHash)
 
   // Flatten to bytes to search for aud, sub, and exp substring
   u8[N*128] flattened = flattenedToBytes(paddedJwt)  
-  return checkAud(flattened, aud, audIdx)   &&    checkSub(flattened, extendedSub, subMask, maskedSub, subIdx)    &&    checkExp(paddedJwt, expGreaterThan, expIdx)
+  return checkAud(flattened, aud, audIdx)   &&    checkSub(flattened, subMask, maskedSub, subIdx)    &&    checkExp(paddedJwt, expGreaterThan, expIdx)
 
 
 
-def main(private u32[4][16] paddedJwt, u32[8] jwtHash, private u8[17] aud, private u32 audIdx, private u8[64] extendedSub, u8[64] maskedSub, private u32 subIdx, private u8[64] subMask, private u32 onesInSubMask, u32 expGreaterThan, private u32[2] expIdx) -> bool:
-    return checkJwt(paddedJwt, jwtHash, aud, audIdx, extendedSub, maskedSub, subIdx, subMask, onesInSubMask, expGreaterThan, expIdx)
+def main(private u32[1][16] paddedJwt, u32[8] jwtHash, private u8[17] aud, private u32 audIdx, u8[64] maskedSub, private u32 subIdx, private u8[64] subMask, private u32 onesInSubMask, u32 expGreaterThan, private u32[2] expIdx) -> bool:
+    return checkJwt(paddedJwt, jwtHash, aud, audIdx, maskedSub, subIdx, subMask, onesInSubMask, expGreaterThan, expIdx)
