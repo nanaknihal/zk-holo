@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "bitwise-buffer": "^1.0.2",
     "buffer-xor": "^2.0.2",
     "ethers": "^5.6.8",
     "wtfprotocol-helpers": "^1.2.3"
