@@ -51,14 +51,14 @@ const jwtProofParams = (jwt, lettuce, bottomBread='","sub":"', topBread='","', s
         sandwich: sandwichB64,
         sandwichPadded: sandwichPaddedB64,
         sandwichMask: sandwichMaskB64,
-        sandwichMasked: sandwich
-        // credStartInB64: credStartInB64
+        sandwichMasked: sandwichMaskedB64,
+        credStartInB64: header.length+1 + shiftedStartInB64,
     }
 }
 
-// jwtProofParams(googleJwt)
 // const {tbs} = jwtProofParams(orcidJwt)
-jwtProofParams(twitterJwt, 'ProtocolWtf', '"creds":"')
+// console.log(jwtProofParams(twitterJwt, 'ProtocolWtf', '"creds":"'))
+// console.log(jwtProofParams(orcidJwt, '0000-0002-2308-9517', '"sub":"'))
 // can't search by byte, because payload index is by
 
 const chunk = (arr, chunkSize) => {
