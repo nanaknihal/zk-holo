@@ -3,7 +3,8 @@
     "bitwise-buffer": "^1.0.2",
     "buffer-xor": "^2.0.2",
     "ethers": "^5.6.8",
-    "wtfprotocol-helpers": "^1.2.3"
+    "wtfprotocol-helpers": "^1.2.3",
+    "zokrates-js": "^1.0.44"
   },
   "name": "holozk",
   "version": "1.0.0",

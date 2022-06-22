@@ -89,12 +89,9 @@ def flattenedToBytes<N,F>(u32[N][16] nBy16Arr) -> u8[F]:
 
 // Wrap everything together to check a JWT
 def checkJwt<N,A,S>(u32[N][16] paddedJwt, u32[8] jwtHash, u8[A] aud, u32 audIdx, u8[S] maskedSub, u32 subIdx, private u8[S] subMask, private u32 onesInSubMask, u32 expGreaterThan, private u32[2] expIdx) -> bool: //allow JWT up to 512 bits
-  // Check that preimage is valid
-  assert(sha256(paddedJwt) == jwtHash)
-
   // Flatten to bytes to search for aud, sub, and exp substring
   u8[N*128] flattened = flattenedToBytes(paddedJwt)  
-  return checkAud(flattened, aud, audIdx)   &&    checkSub(flattened, subMask, maskedSub, subIdx)    &&    checkExp(paddedJwt, expGreaterThan, expIdx)
+  return (sha256(paddedJwt) == jwtHash) && checkAud(flattened, aud, audIdx)   &&    checkSub(flattened, subMask, maskedSub, subIdx)    &&    checkExp(paddedJwt, expGreaterThan, expIdx)
 
 
 
