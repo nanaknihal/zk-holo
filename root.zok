@@ -45,8 +45,8 @@ def checkAud<F,A>(u8[F] flattened, u8[A] aud, u32 audIdx) -> bool:
 
 
 // Checks a JWT's exp claim at expIdx. expIdx should be private but expGreaterThan should be public
-def checkExp<N>(u32[N][16] paddedJwt, u32 expGreaterThan, u32[2] expIdx) -> bool:
-  return paddedJwt[expIdx[0]][expIdx[1]] > expGreaterThan
+// def checkExp<N>(u32[N][16] paddedJwt, u32 expGreaterThan, u32[2] expIdx) -> bool:
+//   return paddedJwt[expIdx[0]][expIdx[1]] > expGreaterThan
 
 
 // @param {extendedSub} the sub claim, plus the following extra characters up to length S for padding as inputs must be of fixed length
