@@ -146,6 +146,7 @@ const plaintextInB64 = (plaintext, b64, extendedLengthB64, idxOffset=0) => {
     const extendedPtToB64 = b64.slice(shiftedStartB64, shiftedStartB64+extendedLengthB64)
     console.log(shiftedStartB64, shiftedLengthB64, extendedLengthB64)
     // Mask to hide all the unimportant, potentially private characters after the plaintext
+    console.log(extendedLengthB64,shiftedLengthB64)
     const mask =  'FF'.repeat(shiftedLengthB64) + '00'.repeat(extendedLengthB64 - shiftedLengthB64)
     const masked = and(Buffer.from(extendedPtToB64), Buffer.from(mask, 'hex'))
     
@@ -159,8 +160,8 @@ const plaintextInB64 = (plaintext, b64, extendedLengthB64, idxOffset=0) => {
 
 }
 const jwtProofParams = (jwt, options) => {
-    const {aud, audPaddedLength, sub, subPaddedLength, exp, expGreaterThan} = options
-    const expPaddedLength = 
+    const {aud, audPaddedLength, sub, subPaddedLength, exp} = options
+    const expPaddedLength = 28
     assert((audPaddedLength % 4 == 0) && (subPaddedLength % 4 == 0), 'base64 wraps around every 4 characters (3 ascii characters is 4 base64 characters. padded sandwich length must be a multiple of 4 to avoid invalid strings being searched for')
     const [header, payload, signature] = jwt.split('.')
     const tbs = `${header}.${payload}`
@@ -174,6 +175,7 @@ const jwtProofParams = (jwt, options) => {
         hash: JSON.stringify(toU32Array(Buffer.from(ethers.utils.sha256(Buffer.from(tbs)).replace('0x',''), 'hex'))),
         aud: plaintextInB64(aud, payload, audPaddedLength, header.length + 1),
         sub: plaintextInB64(sub, payload, subPaddedLength, header.length + 1),
+        exp: plaintextInB64(exp, payload, expPaddedLength, header.length + 1),
     }
     // {
     //     tbs: tbs,
@@ -193,8 +195,9 @@ let twitterParams = jwtProofParams(twitterJwt,
     {
         sub:'"creds":"ProtocolWtf","', 
         subPaddedLength: 48,
-        aud:'","aud":"gnosis","',
-        audPaddedLength: 24
+        aud:'"aud":"gnosis","',
+        audPaddedLength: 24,
+        exp:'"exp":"1651365253"}'
     })
 // console.log(toU32StringArray(Buffer.from(twitterParams.tbs)).length, Buffer.from(twitterParams.tbs).length)
 console.log(twitterParams)
