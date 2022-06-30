@@ -31,9 +31,18 @@ const toU32Array = (bytes) => {
     let u32s = chunk(bytes.toString('hex'), 8)
     return u32s.map(x=>parseInt(x, 16))
 }
+const toU8Array = (bytes) => {
+    let u8s = chunk(bytes.toString('hex'),2)
+    return u8s.map(x=>parseInt(x,16))
+}
+
 const toU32StringArray = (bytes) => {
     let u32s = chunk(bytes.toString('hex'), 8)
     return u32s.map(x=>parseInt(x, 16).toString())
+}
+const toU8StringArray = (bytes) => {
+    let u8s = chunk(bytes.toString('hex'),2)
+    return u8s.map(x=>parseInt(x,16).toString())
 }
 // console.log(
 //     'snark input', 
@@ -149,10 +158,10 @@ const b64ProofParams = (plaintext, b64, extendedLengthB64, idxOffset=0) => {
     const masked = and(Buffer.from(extendedPtToB64), Buffer.from(mask, 'hex'))
     
     return {
-                searchString: shiftedPtToB64,
-                extended : extendedPtToB64,
-                mask: mask,
-                masked: masked,
+                // searchString: JSON.stringify(toU8Array(Buffer.from(shiftedPtToB64))),
+                // extended : JSON.stringify(toU8Array(Buffer.from(extendedPtToB64))),
+                mask: JSON.stringify(toU8Array(Buffer.from(mask, 'hex'))),
+                masked: JSON.stringify(toU8Array(masked)),
                 idx: idxOffset + shiftedStartB64,
            }
 
