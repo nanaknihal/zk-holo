@@ -106,6 +106,12 @@ const stringToPaddedU32NBy16Array = (str) =>
         ),
         16
     )
+const stringToPaddedU8Array = (str) => 
+    toU8Array(
+        padBytesForSha256(
+            Buffer.from(str)
+    )
+)
 
 // console.log(
 //     'padded',
@@ -179,6 +185,7 @@ const jwtProofParams = (jwt, options) => {
     return {
         // tbs: tbs, 
         preimage: JSON.stringify(stringToPaddedU32NBy16Array(tbs)),
+        flattend: JSON.stringify(stringToPaddedU8Array(tbs)),
         hash: JSON.stringify(toU32Array(Buffer.from(ethers.utils.sha256(Buffer.from(tbs)).replace('0x',''), 'hex'))),
         aud: b64ProofParams(aud, payload, audPaddedLength, header.length + 1),
         sub: b64ProofParams(sub, payload, subPaddedLength, header.length + 1),
