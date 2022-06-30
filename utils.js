@@ -128,7 +128,7 @@ const stringToPaddedU32NBy16Array = (str) =>
 * Shifting left doesn't reveal the length of the sandwich, if the sandwich is '"sub":', rather than '","sub"'
 * Shifting left will, at most, reveal '",' and whether the previous part of the payload is a number of chars divisble by 3.
 */
-const plaintextInB64 = (plaintext, b64, extendedLengthB64, idxOffset=0) => {
+const b64ProofParams = (plaintext, b64, extendedLengthB64, idxOffset=0) => {
     // Find byte at which text occurs in the *plaintext* version
     const [startPt, endPt] = searchForPlainTextInBase64(plaintext, b64)
 
@@ -144,9 +144,7 @@ const plaintextInB64 = (plaintext, b64, extendedLengthB64, idxOffset=0) => {
     // String that will be found in the base64 which includes base64 conversion of: *remainder* characters followed by plaintext
     const shiftedPtToB64 = b64.slice(shiftedStartB64, shiftedStartB64+shiftedLengthB64)
     const extendedPtToB64 = b64.slice(shiftedStartB64, shiftedStartB64+extendedLengthB64)
-    console.log(shiftedStartB64, shiftedLengthB64, extendedLengthB64)
     // Mask to hide all the unimportant, potentially private characters after the plaintext
-    console.log(extendedLengthB64,shiftedLengthB64)
     const mask =  'FF'.repeat(shiftedLengthB64) + '00'.repeat(extendedLengthB64 - shiftedLengthB64)
     const masked = and(Buffer.from(extendedPtToB64), Buffer.from(mask, 'hex'))
     
@@ -161,7 +159,7 @@ const plaintextInB64 = (plaintext, b64, extendedLengthB64, idxOffset=0) => {
 }
 const jwtProofParams = (jwt, options) => {
     const {aud, audPaddedLength, sub, subPaddedLength, exp} = options
-    const expPaddedLength = 28
+    const expPaddedLength = 24
     assert((audPaddedLength % 4 == 0) && (subPaddedLength % 4 == 0), 'base64 wraps around every 4 characters (3 ascii characters is 4 base64 characters. padded sandwich length must be a multiple of 4 to avoid invalid strings being searched for')
     const [header, payload, signature] = jwt.split('.')
     const tbs = `${header}.${payload}`
@@ -173,9 +171,9 @@ const jwtProofParams = (jwt, options) => {
         // tbs: tbs, 
         preimage: JSON.stringify(stringToPaddedU32NBy16Array(tbs)),
         hash: JSON.stringify(toU32Array(Buffer.from(ethers.utils.sha256(Buffer.from(tbs)).replace('0x',''), 'hex'))),
-        aud: plaintextInB64(aud, payload, audPaddedLength, header.length + 1),
-        sub: plaintextInB64(sub, payload, subPaddedLength, header.length + 1),
-        exp: plaintextInB64(exp, payload, expPaddedLength, header.length + 1),
+        aud: b64ProofParams(aud, payload, audPaddedLength, header.length + 1),
+        sub: b64ProofParams(sub, payload, subPaddedLength, header.length + 1),
+        exp: b64ProofParams(exp, payload, expPaddedLength, header.length + 1),
     }
     // {
     //     tbs: tbs,
@@ -201,3 +199,7 @@ let twitterParams = jwtProofParams(twitterJwt,
     })
 // console.log(toU32StringArray(Buffer.from(twitterParams.tbs)).length, Buffer.from(twitterParams.tbs).length)
 console.log(twitterParams)
+
+function testJWTProofParams(params){
+    assert(params.masked.length % 4 == 0)
+}
