@@ -91,12 +91,12 @@ def flattenedToBytes<N,F>(u32[N][16] nBy16Arr) -> u8[F]:
 
 
 // Wrap everything together to check a JWT
-def checkJwt<N,A,S>(u32[N][16] paddedJwt, u32[8] jwtHash, private u8[A] audMask, u8[A] audMasked, private u32 audIdx, private u8[S] subMask, u8[S] subMasked, private u32 subIdx, private u8[6] expMask, u8[6] expMasked, private u32 expIdx) -> bool: //allow JWT up to 512 bits
+def checkJwt<N,A,S>(u32[N][16] paddedJwt, u32[8] jwtHash, private u8[A] audMask, u8[A] audMasked, private u32 audIdx, private u8[S] subMask, u8[S] subMasked, private u32 subIdx, private u8[24] expMask, u8[24] expMasked, private u32 expIdx) -> bool: //allow JWT up to 512 bits
   // Flatten to bytes to search for aud, sub, and exp substring
   u8[N*128] flattened = flattenedToBytes(paddedJwt)  
   // checkAud(flattened, aud, audIdx) 
   return (sha256(paddedJwt) == jwtHash)   &&    hasMaskedString(flattened, audMask, audMasked, audIdx)    &&    hasMaskedString(flattened, subMask, subMasked, subIdx)    &&    hasMaskedString(flattened, expMask, expMasked, expIdx)
 
 
-def main(private u32[1][16] paddedJwt, u32[8] jwtHash, private u8[24] audMask, u8[24] audMasked, private u32 audIdx, private u8[64] subMask, u8[64] subMasked, private u32 subIdx, private u8[6] expMask, u8[6] expMasked, private u32 expIdx) -> bool:
+def main(private u32[1][16] paddedJwt, u32[8] jwtHash, private u8[24] audMask, u8[24] audMasked, private u32 audIdx, private u8[48] subMask, u8[48] subMasked, private u32 subIdx, private u8[24] expMask, u8[24] expMasked, private u32 expIdx) -> bool:
     return checkJwt(paddedJwt, jwtHash, audMask, audMasked, audIdx, subMask, subMasked, subIdx, expMask, expMasked, expIdx)
