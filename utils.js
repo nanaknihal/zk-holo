@@ -213,9 +213,14 @@ let twitterParams = jwtProofParams(twitterJwt,
         audPaddedLength: 24,
         exp:'"exp":"1651365253"}'
     })
+let googleParams = jwtProofParams(googleJwt, 
+    {
+        sub:'"sub":"100787844473172298543","', 
+        subPaddedLength: 48,
+        aud:'"aud":"254984500566-3qis54mofeg5edogaujrp8rb7pbp9qtn.apps.googleusercontent.com","',
+        audPaddedLength: 108,
+        exp:',"exp":1651352873,"'
+    })
 // console.log(toU32StringArray(Buffer.from(twitterParams.tbs)).length, Buffer.from(twitterParams.tbs).length)
 console.log(twitterParams)
-
-function testJWTProofParams(params){
-    assert(params.masked.length % 4 == 0)
-}
+console.log(googleParams)
