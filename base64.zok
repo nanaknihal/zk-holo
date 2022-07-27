@@ -1,12 +1,17 @@
+from "EMBED" import u8_from_bits;
 from "EMBED" import u8_to_bits;
-def main(u8[60] input) -> bool[360] { //can make output shorter
-    bool[360] mut out = [false; 360];
+// NOTE: this does not check it's a valid base64 string, and if it's not, this will give invalid outputs! This is optimized for efficiency, not safety
+def fromBase64<I,O>(u8[I] input) -> bool[O] { //can make output shorter
+    bool[O] mut out = [false; O];
     // u32 mut iTimes6 = 0;
-    for u32 i in 0..60 {
+    for u32 i in 0..I {
         // iTimes6 = i * 6;
         // if less than Z (0-25), just add 65 to go base64 -> UTF-8 
-        u8 utf8 = input[i] < 26 ? input[i] + 41 : (input[i] < 52 ? input[i] + 71 : 0);
-        bool[8] bin = u8_to_bits(utf8);
+        // u8 converted = input[i] < 26 ? input[i] + 41 : (input[i] < 52 ? input[i] + 71 : (input[i] < 62 : input[i] - 4) : input );
+        // 43 is +
+        // 47 is /
+        u8 converted = (input[i] == 43 ? 62 : (input[i] == 47 ? 63 : (input[i] < 58 ? input[i] - 4 : (input[i] < 91 ? input[i] - 65 : input[i] - 71))));
+        bool[8] bin = u8_to_bits(converted);
         out[i*6] = bin[2];
         out[i*6+1] = bin[3];
         out[i*6+2] = bin[4];
@@ -15,9 +20,30 @@ def main(u8[60] input) -> bool[360] { //can make output shorter
         out[i*6+5] = bin[7];
     }
     return out;
-    // return foo::<60>();
 }
 
-// def foo<N>() -> bool[N] {
-//     return [false; N];
-// }
+
+// modified from utils/casts, TODO: PR this to utils/casts
+// convert an array of bool to an array of u8
+// the sizes must match (one u32 for 32 bool) otherwise an error will happen
+def bool_array_to_u8_array<N, P>(bool[N] bits) -> u8[P] {
+    assert(N == 8 * P);
+
+    u8[P] mut res = [0; P];
+
+    for u32 i in 0..P {
+        res[i] = u8_from_bits(bits[8 * i..8 * (i + 1)]);
+    }
+
+    return res;
+}
+
+def main() -> u8[27] {
+    bool[216] out = fromBase64::<36,216>([84,87,70,117,101,83,66,111,89,87,53,107,99,121,66,116,89,87,116,108,73,71,120,112,90,50,104,48,73,72,100,118,99,109,115,117]);
+    u8[27] out2 = bool_array_to_u8_array::<216,27>(out);
+    // assert(bool_array_to_u8_array::<216,27>(out) == [77,97,110,121,32,104,97,110,100,115,32,109,97,107,101,32,108,105,103,104,116,32,119,111,114,107,46]);
+    // return true;
+    return out2;
+}
+
+
