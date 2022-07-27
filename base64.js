@@ -1,4 +1,7 @@
-from "EMBED" import u8_from_bits;
+const { initialize } = require('zokrates-js')
+initialize().then((zokratesProvider) => {
+    const source = `
+    from "EMBED" import u8_from_bits;
 from "EMBED" import u8_to_bits;
 
 // NOTE: this assumes input is of length divisible by 4 and output is of length input/4*3*8
@@ -75,6 +78,19 @@ def googleJWTConvert() -> u8[660] {
 def main() -> u8[660] {
     u8[660] stillUgly = googleJWTConvert();
     bool[660*8] boolified = u8_array_to_bool_array(stillUgly);
-    bool[660*8] shifted = [...boolified[12..5280], false, false, false, false, false, false, false, false, false, false, false, false];
+    bool[660*8] shifted = [...boolified[2..5280], false, false];
     return bool_array_to_u8_array(shifted);
 }
+    `
+
+    // compilation
+    const artifacts = zokratesProvider.compile(source);
+
+    // computation
+    const { witness, output } = zokratesProvider.computeWitness(artifacts, []);
+    const parsedOut = Buffer.concat(JSON.parse(output).map(x=>Buffer.from(x.replace("0x",""), "hex")))
+    console.log(
+        parsedOut.toString("hex"), parsedOut.toString()
+    )
+});
+
