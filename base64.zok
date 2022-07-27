@@ -1,0 +1,23 @@
+from "EMBED" import u8_to_bits;
+def main(u8[60] input) -> bool[360] { //can make output shorter
+    bool[360] mut out = [false; 360];
+    // u32 mut iTimes6 = 0;
+    for u32 i in 0..60 {
+        // iTimes6 = i * 6;
+        // if less than Z (0-25), just add 65 to go base64 -> UTF-8 
+        u8 utf8 = input[i] < 26 ? input[i] + 41 : (input[i] < 52 ? input[i] + 71 : 0);
+        bool[8] bin = u8_to_bits(utf8);
+        out[i*6] = bin[2];
+        out[i*6+1] = bin[3];
+        out[i*6+2] = bin[4];
+        out[i*6+3] = bin[5];
+        out[i*6+4] = bin[6];
+        out[i*6+5] = bin[7];
+    }
+    return out;
+    // return foo::<60>();
+}
+
+// def foo<N>() -> bool[N] {
+//     return [false; N];
+// }
