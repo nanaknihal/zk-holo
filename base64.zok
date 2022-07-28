@@ -1,20 +1,38 @@
 from "EMBED" import u8_from_bits;
 from "EMBED" import u8_to_bits;
 
+const u8 charZ = 90;
+const u8 upperCaseEnd = 91;
+// char A-Z is 65-92, stored in 8bits char, base64 A-Z is 0-25, stored just in the 6bits necessary. 
+// Therefore, uppercase chars can be converted to base64 by subtracting 65 (and discarding the first two bits of the 8-bit output):
+const u8 upperCaseOffset = 65;
+
+const u8 charz = 122;
+const u8 lowerCaseEnd = 123;
+// Same for lowercase, but with an offset of 71 
+const u8 lowerCaseOffset = 71;
+
+const u8 char9 = 57;
+const u8 numberEnd = 58;
+const u8 numberOffset = 4;
+
+// + and / don't need to be subtracted; they can just be replaced:
+const u8 charPlus = 43;
+const u8 b64Plus = 62;
+const u8 charForwardSlash = 47;
+const u8 b64ForwardSlash = 63;
+
 // NOTE: this assumes input is of length divisible by 4 and output is of length input/4*3*8
 // WARNING: this does not check it's a valid base64 string, and if it's not, this will give invalid outputs! This is optimized for efficiency, not safety
 def fromBase64<I,O>(u8[I] input) -> bool[O] { //can make output shorter
     assert(I % 4 == 0);
     assert((I/4)*3*8 == O);
     bool[O] mut out = [false; O];
-    // u32 mut iTimes6 = 0;
     for u32 i in 0..I {
-        // iTimes6 = i * 6;
-        // if less than Z (0-25), just add 65 to go base64 -> UTF-8 
-        // u8 converted = input[i] < 26 ? input[i] + 41 : (input[i] < 52 ? input[i] + 71 : (input[i] < 62 : input[i] - 4) : input );
-        // 43 is +
-        // 47 is /
-        u8 converted = (input[i] == 43 ? 62 : (input[i] == 47 ? 63 : (input[i] < 58 ? input[i] + 4 : (input[i] < 91 ? input[i] - 65 : input[i] - 71))));
+        // In ascending order, checks that input is +, then /, then less than the highest uppercase letter, then less than the highest number, then less than the highest lowercase letter. 
+        // If any of these checks are true, it does the appropriate replacement, otherwise checks the next condition
+        // Currently, ZoKrates only supports one-line if statements such as ternary
+        u8 converted = (input[i] == charPlus ? b64Plus : (input[i] == charForwardSlash ? b64ForwardSlash : (input[i] < numberEnd ? input[i] + numberOffset : (input[i] < upperCaseEnd ? input[i] - upperCaseOffset : input[i] - lowerCaseOffset))));
         bool[8] bin = u8_to_bits(converted);
         out[i*6] = bin[2];
         out[i*6+1] = bin[3];
