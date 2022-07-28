@@ -93,6 +93,6 @@ def googleJWTConvert() -> u8[660] {
 def main() -> u8[660] {
     u8[660] stillUgly = googleJWTConvert();
     bool[660*8] boolified = u8_array_to_bool_array(stillUgly);
-    bool[660*8] shifted = [...boolified[12..5280], false, false, false, false, false, false, false, false, false, false, false, false];
+    bool[660*8] shifted = [...boolified[2..5280], false, false];
     return bool_array_to_u8_array(shifted);
 }
