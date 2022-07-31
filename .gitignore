@@ -5,3 +5,5 @@ verification.key
 abi.json
 verifier.sol
 out
+*.r1cs
+*.wtns

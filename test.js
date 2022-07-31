@@ -149,12 +149,12 @@ initialize().then((zokratesProvider) => {
         // computation
         const { witness, output } = zokratesProvider.computeWitness(artifacts, args);
 
-        // // run setup
-        // const keypair = zokratesProvider.setup(artifacts.program);
-
-        // // generate proof
-        // const proof = zokratesProvider.generateProof(artifacts.program, witness, keypair.pk);
-
+        // run setup
+        const keypair = zokratesProvider.setup(artifacts.program);
+        console.log("generating proof"); let time_ = Date.now();
+        // generate proof
+        const proof = zokratesProvider.generateProof(artifacts.program, witness, keypair.pk);
+        console.log(Date.now() - time_, "done")
         // // export solidity verifier
         // const verifier = zokratesProvider.exportSolidityVerifier(keypair.vk);
         

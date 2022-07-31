@@ -1,4 +1,4 @@
-
+from "./base64" import fromBase64;
 def testDifferentPaddings() -> bool {
     // This tests conversion with different padding lengths (v1 needs no padding, v2 needs == for padding, v3 needs = for padding)
     // Test on "Many hands make light work."
