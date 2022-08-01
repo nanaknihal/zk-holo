@@ -1,0 +1,78 @@
+from "EMBED" import u32_to_bits as u32ToBits;
+from "EMBED" import u32_from_bits as u32FromBits;
+from "EMBED" import u8_to_bits as u8ToBits;
+from "EMBED" import u8_from_bits as u8FromBits;
+// Flatten a N*16 array of u32 to a 1-dimensional array of bytes
+def flatten<N,F>(u32[N][16] nBy16Arr) -> u8[F] {
+  // QUESTION: SHOULDN'T IT BE N*64???!!!
+  u8[N*64] mut flattened = [0; N*64];
+  u32 mut iTimes64 = 0;
+  u32 mut iTimes64PlusJTimes4 = 0;
+  for u32 i in 0..N {
+    iTimes64 = 64 * i;
+    for u32 j in 0..16 {
+      iTimes64PlusJTimes4 = iTimes64 + 4 * j;
+      // iTimes16TimesJTimes8 = iTimes16 * j * 8
+      bool[32] newBits = u32ToBits(nBy16Arr[i][j]);
+      flattened[iTimes64PlusJTimes4] = u8FromBits(newBits[0..8]);
+      flattened[iTimes64PlusJTimes4+1] = u8FromBits(newBits[8..16]);
+      flattened[iTimes64PlusJTimes4+2] = u8FromBits(newBits[16..24]);
+      flattened[iTimes64PlusJTimes4+3] = u8FromBits(newBits[24..32]);
+    }
+  }
+  return flattened;
+}
+
+// does the opposite of flatten -- PR?
+def unflatten<F,N>(u8[F] flattened) -> u32[N][16] {
+  // 64 OR 128?! 
+  assert(N*64 == F);
+  u32[N][16] mut nBy16Arr = [[0; 16]; N];
+  for u32 i in 0..N {
+    for u32 j in 0..16 {
+        bool[32] mut nextU32AsBits = [false; 32];
+        for u32 k in 0..4 {
+            bool[8] newBits = u8ToBits(flattened[i*64+j*4+k]);
+            for u32 l in 0..8 {
+                nextU32AsBits[l] = newBits[l];
+            }
+        }
+        nBy16Arr[i][j] = u32FromBits(nextU32AsBits);
+    }
+  }
+  return nBy16Arr;
+}
+
+def main() -> u32[2][16]{
+        u32[2][16] test = [
+[
+    1332634912, 1953984288,
+    1953002085, 1696622191,
+    1970413670, 1769366816,
+    1936291872, 1936029285,
+    1847616873, 1734898720,
+    1852403301,  544499054,
+     543517797, 1986358816,
+    1953981804, 1986360424
+  ],
+  [
+    1769108581, 1701716070,
+    1869967988, 1701146144,
+    1718183540, 1701131833,
+     540095027,  875902519,
+     943271986,  859059510,
+     926431536,  842216501,
+     909588534,  926431542,
+     926431521, 1076044837
+  ]
+];
+    // u32[16] test2 = 
+    // u32[15]
+    // u32[17]
+    // u32[37]
+    u8[128] flattened = flatten(test);
+    assert(flattened == [0x4f,0x6e,0x65,0x20,0x74,0x77,0x6f,0x20,0x74,0x68,0x72,0x65,0x65,0x20,0x66,0x6f,0x75,0x72,0x20,0x66,0x69,0x76,0x65,0x20,0x73,0x69,0x78,0x20,0x73,0x65,0x76,0x65,0x6e,0x20,0x65,0x69,0x67,0x68,0x74,0x20,0x6e,0x69,0x6e,0x65,0x20,0x74,0x65,0x6e,0x20,0x65,0x6c,0x65,0x76,0x65,0x6e,0x20,0x74,0x77,0x65,0x6c,0x76,0x65,0x74,0x68,0x69,0x72,0x74,0x65,0x65,0x6e,0x20,0x66,0x6f,0x75,0x72,0x74,0x65,0x65,0x6e,0x20,0x66,0x69,0x66,0x74,0x65,0x65,0x36,0x39,0x20,0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x30,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x30,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x36,0x37,0x38,0x39,0x36,0x37,0x38,0x39,0x21,0x40,0x23,0x24,0x25]);
+    u32[2][16] unflattened = unflatten(flattened);
+    // assert(test == unflattened);
+    return unflattened;
+}
