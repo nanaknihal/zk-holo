@@ -42,3 +42,26 @@ def unflatten<F,N>(u8[F] flattened) -> u32[N][16] {
   }
   return nBy16Arr;
 }
+
+
+// Returns a substring of length S, starting at fullString[idx];
+def substringAt<F,S>(u8[F] fullString, u32 idx) -> u8[S] {
+	u8[S] mut r = [0; S];
+  for u32 i in 0..S {
+    r[i] = fullString[idx + i];
+	}
+  return r;
+}
+
+// Converts number from a 4-byte string to a u32 integer
+def parseUInt32(u8[4] string) -> u32 {
+    bool[32] mut asBits = [false; 32];
+    for u32 i in 0..4 {
+        u8 asU8 = string[i] - 48;
+        bool[8] bits = u8ToBits(asU8);
+        for u32 j in 0..8 {
+            asBits[i+j] = bits[j];
+        }
+    }
+    return u32FromBits(asBits);
+}
