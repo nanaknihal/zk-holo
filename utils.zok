@@ -2,6 +2,7 @@ from "EMBED" import u32_to_bits as u32ToBits;
 from "EMBED" import u32_from_bits as u32FromBits;
 from "EMBED" import u8_to_bits as u8ToBits;
 from "EMBED" import u8_from_bits as u8FromBits;
+import "utils/casts/u8_to_field" as u8ToField;
 // Flatten a N*16 array of u32 to a 1-dimensional array of bytes
 def flatten<N,F>(u32[N][16] nBy16Arr) -> u8[F] {
   // QUESTION: SHOULDN'T IT BE N*64???!!!
@@ -54,14 +55,17 @@ def substringAt<F,S>(u8[F] fullString, u32 idx) -> u8[S] {
 }
 
 // Converts number from a 4-byte string to a u32 integer
-def parseUInt32(u8[4] string) -> u32 {
-    bool[32] mut asBits = [false; 32];
+def parseUInt32(u8[4] string) -> field {
+    // bool[32] mut asBits = [false; 32];
+    field mut result = 0;
     for u32 i in 0..4 {
-        u8 asU8 = string[i] - 48;
-        bool[8] bits = u8ToBits(asU8);
-        for u32 j in 0..8 {
-            asBits[i+j] = bits[j];
-        }
+        field asField = u8ToField(string[i] - 48);
+        result = result + asField * 10**(3-i);
+        // bool[8] bits = u8ToBits(asU8);
+        // for u32 j in 0..8 {
+        //     asBits[i+j] = bits[j];
+        // }
     }
-    return u32FromBits(asBits);
+    return result;
+    // return u32FromBits(asBits);
 }
