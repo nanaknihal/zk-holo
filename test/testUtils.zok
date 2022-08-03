@@ -1,4 +1,4 @@
-from "../utils" import substringAt, flatten, unflatten;
+from "../utils" import substringAt, flatten, unflatten, decimalString4ToField;
 // from "../utils" import ;
 
 def testFlattenUnflatten() -> bool {
@@ -46,8 +46,15 @@ def testSubstringAt() -> bool {
     return true;
 }
 
+def testDecimalString4ToField() -> bool {
+    assert(decimalString4ToField([49,50,51,52]) == 1234);
+    assert(decimalString4ToField([48,50,51,52]) == 234);
+    return true;
+}
+
 def main() {
     bool a = testFlattenUnflatten();
     bool b = testSubstringAt();
+    bool c = testDecimalString4ToField();
     return;
 }
