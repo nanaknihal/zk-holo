@@ -44,6 +44,15 @@ def unflatten<F,N>(u8[F] flattened) -> u32[N][16] {
   return nBy16Arr;
 }
 
+def u8ArrayTou32Array<N,M>(u8[N] input) -> u32[M] {
+  assert(N == 4*M);
+  u32[M] mut output = [0; M];
+  for u32 i in 0..M {
+    output[i] = u32FromBits([...u8ToBits(input[i*4]), ...u8ToBits(input[i*4+1]), ...u8ToBits(input[i*4+2]), ...u8ToBits(input[i*4+3])]);
+  }
+  return output;
+}
+
 
 // Returns a substring of length S, starting at fullString[idx];
 def substringAt<F,S>(u8[F] fullString, u32 idx) -> u8[S] {
@@ -54,18 +63,15 @@ def substringAt<F,S>(u8[F] fullString, u32 idx) -> u8[S] {
   return r;
 }
 
-// Converts number from a 4-byte string to a u32 integer
-def parseUInt32(u8[4] string) -> field {
-    // bool[32] mut asBits = [false; 32];
+// Converts number from a N-byte string to a field
+// Does not allow for strings larger than 76 digits, but this can be manually changed depending on the curve
+// ALTBN_128 (default curve for ZoKrates) has maximum value 21888242871839275222246405745257275088548364400416034343698204186575808495617, which has 77 digits
+def decimalStringToField<N>(u8[N] string) -> field {
+  assert(N < 77);
     field mut result = 0;
-    for u32 i in 0..4 {
+    for u32 i in 0..N {
         field asField = u8ToField(string[i] - 48);
-        result = result + asField * 10**(3-i);
-        // bool[8] bits = u8ToBits(asU8);
-        // for u32 j in 0..8 {
-        //     asBits[i+j] = bits[j];
-        // }
+        result = result + asField * 10**(N-i-1);
     }
     return result;
-    // return u32FromBits(asBits);
 }

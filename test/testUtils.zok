@@ -1,4 +1,4 @@
-from "../utils" import substringAt, flatten, unflatten, decimalString4ToField;
+from "../utils" import substringAt, flatten, unflatten, u8ArrayTou32Array, decimalStringToField;
 // from "../utils" import ;
 
 def testFlattenUnflatten() -> bool {
@@ -36,6 +36,13 @@ def testFlattenUnflatten() -> bool {
     return true;
 }
 
+def testU8ArrayTou32Array() -> bool {
+    assert(u8ArrayTou32Array::<32,8>([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]) == [0,0,0,0,0,0,0,0]);
+    assert(u8ArrayTou32Array::<4,1>([1,1,1,1]) == [16843009]);
+    assert(u8ArrayTou32Array::<8,2>([1,1,1,1,2,3,4,5]) == [16843009, 33752069]);
+
+    return true;
+}
 def testSubstringAt() -> bool {
     assert(substringAt::<3,2>([30,42,69], 1) == [42,69]);
     assert(substringAt::<4,4>([30,42,69,255], 0) == [30,42,69,255]);
@@ -46,15 +53,19 @@ def testSubstringAt() -> bool {
     return true;
 }
 
-def testDecimalString4ToField() -> bool {
-    assert(decimalString4ToField([49,50,51,52]) == 1234);
-    assert(decimalString4ToField([48,50,51,52]) == 234);
+// should have better coverage -- but how should one deal with edge cases? enforcing characters are all numbers is a somewhat expensive operation
+def testDecimalStringToField() -> bool {
+    assert(decimalStringToField([49,50,51,52]) == 1234);
+    assert(decimalStringToField([48,50,51,52]) == 234);
+    assert(decimalStringToField([48,50,51,52]) == 234);
+    assert(decimalStringToField([49,50,51,52,49,50,51,52,49,50,51,52,49,50,51,52,49,50,51,52,49,50,51,52,49,50,51,52,49,50,51,52]) == 12341234123412341234123412341234);
     return true;
 }
 
 def main() {
     bool a = testFlattenUnflatten();
     bool b = testSubstringAt();
-    bool c = testDecimalString4ToField();
+    bool c = testDecimalStringToField();
+    bool d = testU8ArrayTou32Array();
     return;
 }
