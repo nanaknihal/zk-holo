@@ -17,9 +17,12 @@ const u32 EXP_LENGTH = 18; // 8 from EXP_START then 10 digits
 const u8[3] AUD = [1, 2, 3]; //fix this // U8 representation of 
 const u32 AUD_LENGTH = 3;
 
-def verifyJWT<N>(private u32[N][16] paddedJwt, u32[8] jwtHash, u32[8] subCommitment, private u8[SUB_SECRET_LENGTH] subSecret, private u32 subIdx, private u32 audIdx, field expGreaterThan, private u32 expIdx) {
+const u32 JWT_BLOCKS = 3; // represents length of padded JWT (base64 JWT with periods, header and payload, no signature) in 512-byte multiples 
+
+// Verifies a JWT
+def main(private u32[JWT_BLOCKS][16] paddedJwt, u32[8] jwtHash, u32[8] subCommitment, private u8[SUB_SECRET_LENGTH] subSecret, private u32 subIdx, private u32 audIdx, field expGreaterThan, private u32 expIdx) {
   // Flatten to bytes to search for aud, sub, and exp substring
-  u8[N*128] flattened = flatten(paddedJwt);
+  u8[JWT_BLOCKS*64] flattened = flatten(paddedJwt);
   u8[SUB_LENGTH] sub = substringAt(flattened, subIdx);
   // assert(substringAt(flattened, aud, audIdx) == AUD);
   assert(sha256(paddedJwt) == jwtHash);
