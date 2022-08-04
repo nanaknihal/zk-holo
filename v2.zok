@@ -1,6 +1,5 @@
 from "./base64" import fromBase64;
-from "./utils" import flatten;
-from "./utils" import unFlatten;
+from "./utils" import decimalStringToField, unflatten, flatten, substringAt;
 from "EMBED" import u32_to_bits as u32ToBits;
 from "EMBED" import u32_from_bits as u32FromBits;
 from "EMBED" import u8_to_bits as u8ToBits;
@@ -11,18 +10,24 @@ import "hashes/blake2/blake2s" as macHash;
 const u32 SUB_LENGTH = 30; // Length of sub claim, including SUB_START and SUB_END. SHOULD NOT BE MORE THAN 48, OTHERWISE RECONSIDER THIS DESIGN (NEED TO LEAVE 16 BYTES FOR SECURE RANDOMNESS)
 const u32 SUB_SECRET_LENGTH = 64 - SUB_LENGTH;
 // assert(SUB_SECRET_LENGTH > 15);
-const u8[8] SUB_START = [ 44, 34, 15, 17, 98, 34, 58, 34]; // U8 representation of `,"sub":"`
-const u8[3] SUB_END = [34, 44, 34]; // U8 representation of `","`
-// const u8[] AUD = []; // U8 representation of 
+const u8[8] SUB_START = [ 0x2c, 0x22, 0x73, 0x75, 0x62, 0x22, 0x3a, 0x22 ]; // U8 representation of `,"sub":"`
+const u8[3] SUB_END = [ 0x22, 0x2c, 0x22 ]; // U8 representation of `","`
+const u8[8] EXP_START = [ 0x22, 0x2c, 0x22, 0x65, 0x78, 0x70, 0x22, 0x3a ];
+const u32 EXP_LENGTH = 18; // 8 from EXP_START then 10 digits
+const u8[3] AUD = [1, 2, 3]; //fix this // U8 representation of 
+const u32 AUD_LENGTH = 3;
 
-def verifyJWT<N>(private u32[N][16] paddedJwt, u32[8] jwtHash, private u32 subIdx, private u32[SUB_SECRET_LENGTH] subSecret, u32[8] subCommitment, private u32 expIdx, u32 expGreaterThan) {
+def verifyJWT<N>(private u32[N][16] paddedJwt, u32[8] jwtHash, u32[8] subCommitment, private u8[SUB_SECRET_LENGTH] subSecret, private u32 subIdx, private u32 audIdx, field expGreaterThan, private u32 expIdx) {
   // Flatten to bytes to search for aud, sub, and exp substring
-  u8[N*128] flattened = flattenedToBytes(paddedJwt);
+  u8[N*128] flattened = flatten(paddedJwt);
   u8[SUB_LENGTH] sub = substringAt(flattened, subIdx);
-  // checkAud(flattened, aud, audIdx);
+  // assert(substringAt(flattened, aud, audIdx) == AUD);
   assert(sha256(paddedJwt) == jwtHash);
-
-//   assert(macHash([...sub]));
+  assert(macHash(unflatten::<64,1>([...sub, ...subSecret])) == subCommitment);
+  u8[AUD_LENGTH] proposedAud = substringAt(flattened, audIdx);
+  assert(proposedAud == AUD);
+  u8[10] expFromJwt = substringAt(flattened, expIdx);
+  assert(decimalStringToField(expFromJwt) > expGreaterThan);
   return;
 }
 
