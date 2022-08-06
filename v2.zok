@@ -1,5 +1,5 @@
 from "./base64" import fromBase64;
-from "./utils" import decimalStringToField, unflatten, flatten, substringAt;
+from "./utils" import decimalStringToField, unflatten, flatten, substringAt, bool_array_to_u8_array, u8_array_to_bool_array;
 from "EMBED" import u32_to_bits as u32ToBits;
 from "EMBED" import u32_from_bits as u32FromBits;
 from "EMBED" import u8_to_bits as u8ToBits;
@@ -31,13 +31,18 @@ const u32 AUD_LENGTH = 3;
 const u8[AUD_LENGTH] AUD = [1, 2, 3]; //fix this // U8 representation of 
 
 const u32 JWT_BLOCKS = 3; // represents length of padded JWT (base64 JWT with periods, header and payload, no signature) in 512-byte multiples 
+const u32 JWT_NUMBITS_PLAINTEXT = JWT_BLOCKS * 384; // how many bits a JWT is in plaintext
 
 // Verifies a JWT
 def main(private u32[JWT_BLOCKS][16] paddedJwt, u32[8] jwtDigest, u32[8] subCommitment, private u8[SUB_SECRET_LENGTH] subSecret, private u32 subIdx, private u32 audIdx, field expGreaterThan, private u32 expIdx) {
   // Flatten to bytes to search for aud, sub, and exp substring
   u8[JWT_BLOCKS*64] flattened = flatten(paddedJwt);
   // Convert from base64 to string search for aud, sub, and exp substring
-  u8[JWT_BLOCKS*48] asStr = fromBase64(flattened);
+  u8[JWT_BLOCKS*48] plaintext = fromBase64(flattened);
+  // Shift string by two bits to account for . offset between header and payload. This will make the header undecipherable but allow the payload to be deciphered
+  bool[JWT_NUMBITS_PLAINTEXT] boolified = u8_array_to_bool_array(plaintext);
+  bool[JWT_NUMBITS_PLAINTEXT] shifted = [...boolified[2..JWT_NUMBITS_PLAINTEXT], false, false];
+  u8[JWT_BLOCKS*48] asStr = bool_array_to_u8_array(shifted);
 
   // Check that JWT contains valid sub
   u8[SUB_START_LENGTH]  proposedSubStart   = substringAt(asStr, subIdx);
