@@ -39,19 +39,24 @@ const u32 JWT_NUMBITS_PLAINTEXT = JWT_BLOCKS * 384; // how many bits a JWT is in
 // SHIFT_BASE64 shifts the base64-encoded JWT by a certain number of characters before it's decoded
 // SHIFT_BASE64 pad characters (=) will be added to the base64sting beforehand. This allows you to offset
 // the base64 encoding by 0,1,2, or 3, so that the . between the header.payload doesn't make the payload illegible
-const u32 SHIFT_BASE64 = 0; // can be either 0,1,2,3 
+const u32 SHIFT_BASE64 = 0; // can be either 0,1,2,3. Different versions should be compiled when it's 0,1,2, or 3
 
 // Formats u32[JWT_BLOCKS][16] JWT into a u8[JWT_BLOCKS*48] array of base64-decoded JWT content. This content is shifted by two bits so the payload after the . is readable
 def payloadFriendlyFormat(u32[JWT_BLOCKS][16] paddedJwt) -> u8[JWT_LENGTH_PLAINTEXT] {
   // Flatten to bytes to search for aud, sub, and exp substring
-  u8[JWT_BLOCKS*64] flattened = flatten(paddedJwt);
+  u8[JWT_BLOCKS*64] flattened_ = flatten(paddedJwt);
+  u8[JWT_BLOCKS*64] flattened = [...[0; SHIFT_BASE64], ...flattened_[SHIFT_BASE64..JWT_BLOCKS*64]];
   // Convert from base64 to string search for aud, sub, and exp substring
   u8[JWT_BLOCKS*48] plaintext = fromBase64(flattened);
+
+  
   // Shift string by two bits to account for . offset between header and payload. This will make the header undecipherable but allow the payload to be deciphered
-  bool[JWT_NUMBITS_PLAINTEXT] boolified = u8_array_to_bool_array(plaintext);
-  bool[JWT_NUMBITS_PLAINTEXT] shifted = [...boolified[2..JWT_NUMBITS_PLAINTEXT], false, false];
-  u8[JWT_BLOCKS*48] result = bool_array_to_u8_array(shifted);
-  return result;
+  // bool[JWT_NUMBITS_PLAINTEXT] boolified = u8_array_to_bool_array(plaintext);
+  // bool[JWT_NUMBITS_PLAINTEXT] shifted = [...boolified[2..JWT_NUMBITS_PLAINTEXT], false, false];
+  // u8[JWT_BLOCKS*48] result = bool_array_to_u8_array(shifted);
+  // return result;
+
+  return plaintext;
 }
 
 // Verifies a JWT
