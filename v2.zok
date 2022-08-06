@@ -31,10 +31,11 @@ const u32 AUD_LENGTH = 3;
 const u8[AUD_LENGTH] AUD = [1, 2, 3]; //fix this // U8 representation of 
 
 const u32 JWT_BLOCKS = 3; // represents length of padded JWT (base64 JWT with periods, header and payload, no signature) in 512-byte multiples 
+const u32 JWT_LENGTH_PLAINTEXT = JWT_BLOCKS * 48;
 const u32 JWT_NUMBITS_PLAINTEXT = JWT_BLOCKS * 384; // how many bits a JWT is in plaintext
 
-// Verifies a JWT
-def main(private u32[JWT_BLOCKS][16] paddedJwt, u32[8] jwtDigest, u32[8] subCommitment, private u8[SUB_SECRET_LENGTH] subSecret, private u32 subIdx, private u32 audIdx, field expGreaterThan, private u32 expIdx) {
+// Formats u32[JWT_BLOCKS][16] JWT into a u8[JWT_BLOCKS*48] array of base64-decoded JWT content. This content is shifted by two bits so the payload after the . is readable
+def payloadFriendlyFormat(u32[JWT_BLOCKS][16] paddedJwt) -> u8[JWT_LENGTH_PLAINTEXT] {
   // Flatten to bytes to search for aud, sub, and exp substring
   u8[JWT_BLOCKS*64] flattened = flatten(paddedJwt);
   // Convert from base64 to string search for aud, sub, and exp substring
@@ -42,34 +43,36 @@ def main(private u32[JWT_BLOCKS][16] paddedJwt, u32[8] jwtDigest, u32[8] subComm
   // Shift string by two bits to account for . offset between header and payload. This will make the header undecipherable but allow the payload to be deciphered
   bool[JWT_NUMBITS_PLAINTEXT] boolified = u8_array_to_bool_array(plaintext);
   bool[JWT_NUMBITS_PLAINTEXT] shifted = [...boolified[2..JWT_NUMBITS_PLAINTEXT], false, false];
-  u8[JWT_BLOCKS*48] asStr = bool_array_to_u8_array(shifted);
+  u8[JWT_BLOCKS*48] result = bool_array_to_u8_array(shifted);
+  return result;
+}
 
+// Verifies a JWT
+def main(private u32[JWT_BLOCKS][16] paddedJwt, u32[8] jwtDigest, u32[8] subCommitment, private u8[SUB_SECRET_LENGTH] subSecret, private u32 subIdx, private u32 audIdx, field expGreaterThan, private u32 expIdx) {
+  u8[JWT_LENGTH_PLAINTEXT] formatted = payloadFriendlyFormat(paddedJwt);
   // Check that JWT contains valid sub
-  u8[SUB_START_LENGTH]  proposedSubStart   = substringAt(asStr, subIdx);
-  u8[SUB_MIDDLE_LENGTH] proposedSubMiddle  = substringAt(asStr, subIdx + SUB_START_LENGTH);
-  u8[SUB_END_LENGTH]    proposedSubEnd     = substringAt(asStr, subIdx + SUB_START_LENGTH + SUB_MIDDLE_LENGTH);
+  u8[SUB_START_LENGTH]  proposedSubStart   = substringAt(formatted, subIdx);
+  u8[SUB_MIDDLE_LENGTH] proposedSubMiddle  = substringAt(formatted, subIdx + SUB_START_LENGTH);
+  u8[SUB_END_LENGTH]    proposedSubEnd     = substringAt(formatted, subIdx + SUB_START_LENGTH + SUB_MIDDLE_LENGTH);
 
   assert(proposedSubStart == SUB_START);
   assert(proposedSubEnd == SUB_END);
   assert(macHash(unflatten::<64,1>([...proposedSubMiddle, ...subSecret])) == subCommitment);
 
   // Check that JWT contains valid aud
-  u8[AUD_LENGTH] proposedAud = substringAt(asStr, audIdx);
+  u8[AUD_LENGTH] proposedAud = substringAt(formatted, audIdx);
   assert(proposedAud == AUD);
 
   // Check that JWT contains valid exp
-  u8[EXP_START_LENGTH]  proposedExpStart  = substringAt(asStr, expIdx);
-  u8[EXP_MIDDLE_LENGTH] proposedExpMiddle = substringAt(asStr, expIdx + EXP_START_LENGTH);
-  u8[EXP_END_LENGTH]    proposedExpEnd    = substringAt(asStr, expIdx + EXP_START_LENGTH+EXP_MIDDLE_LENGTH);
+  u8[EXP_START_LENGTH]  proposedExpStart  = substringAt(formatted, expIdx);
+  u8[EXP_MIDDLE_LENGTH] proposedExpMiddle = substringAt(formatted, expIdx + EXP_START_LENGTH);
+  u8[EXP_END_LENGTH]    proposedExpEnd    = substringAt(formatted, expIdx + EXP_START_LENGTH + EXP_MIDDLE_LENGTH);
   assert(proposedExpStart == EXP_START);
   assert(proposedExpEnd == EXP_END);
   assert(decimalStringToField(proposedExpMiddle) > expGreaterThan);
 
   // Check that JWT hashes to jwtDigest
   assert(sha256(paddedJwt) == jwtDigest);
-  
-  
-  
 
   return;
 }
