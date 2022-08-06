@@ -1,8 +1,9 @@
-from "EMBED" import u32_to_bits as u32ToBits;
-from "EMBED" import u32_from_bits as u32FromBits;
-from "EMBED" import u8_to_bits as u8ToBits;
-from "EMBED" import u8_from_bits as u8FromBits;
-import "utils/casts/u8_to_field" as u8ToField;
+from "EMBED" import u32_to_bits as u32_to_bits;
+from "EMBED" import u32_from_bits as u32_from_bits;
+from "EMBED" import u8_to_bits as u8_to_bits;
+from "EMBED" import u8_from_bits as u8_from_bits;
+import "utils/casts/u8_to_field" as u8_to_field;
+
 // Flatten a N*16 array of u32 to a 1-dimensional array of bytes
 def flatten<N,F>(u32[N][16] nBy16Arr) -> u8[F] {
   // QUESTION: SHOULDN'T IT BE N*64???!!!
@@ -14,11 +15,11 @@ def flatten<N,F>(u32[N][16] nBy16Arr) -> u8[F] {
     for u32 j in 0..16 {
       iTimes64PlusJTimes4 = iTimes64 + 4 * j;
       // iTimes16TimesJTimes8 = iTimes16 * j * 8
-      bool[32] newBits = u32ToBits(nBy16Arr[i][j]);
-      flattened[iTimes64PlusJTimes4] = u8FromBits(newBits[0..8]);
-      flattened[iTimes64PlusJTimes4+1] = u8FromBits(newBits[8..16]);
-      flattened[iTimes64PlusJTimes4+2] = u8FromBits(newBits[16..24]);
-      flattened[iTimes64PlusJTimes4+3] = u8FromBits(newBits[24..32]);
+      bool[32] newBits = u32_to_bits(nBy16Arr[i][j]);
+      flattened[iTimes64PlusJTimes4] = u8_from_bits(newBits[0..8]);
+      flattened[iTimes64PlusJTimes4+1] = u8_from_bits(newBits[8..16]);
+      flattened[iTimes64PlusJTimes4+2] = u8_from_bits(newBits[16..24]);
+      flattened[iTimes64PlusJTimes4+3] = u8_from_bits(newBits[24..32]);
     }
   }
   return flattened;
@@ -33,12 +34,12 @@ def unflatten<F,N>(u8[F] flattened) -> u32[N][16] {
     for u32 j in 0..16 {
         bool[32] mut nextU32AsBits = [false; 32];
         for u32 k in 0..4 {
-            bool[8] newBits = u8ToBits(flattened[i*64+j*4+k]);
+            bool[8] newBits = u8_to_bits(flattened[i*64+j*4+k]);
             for u32 l in 0..8 {
                 nextU32AsBits[k*8+l] = newBits[l];
             }
         }
-        nBy16Arr[i][j] = u32FromBits(nextU32AsBits);
+        nBy16Arr[i][j] = u32_from_bits(nextU32AsBits);
     }
   }
   return nBy16Arr;
@@ -48,7 +49,7 @@ def u8ArrayTou32Array<N,M>(u8[N] input) -> u32[M] {
   assert(N == 4*M);
   u32[M] mut output = [0; M];
   for u32 i in 0..M {
-    output[i] = u32FromBits([...u8ToBits(input[i*4]), ...u8ToBits(input[i*4+1]), ...u8ToBits(input[i*4+2]), ...u8ToBits(input[i*4+3])]);
+    output[i] = u32_from_bits([...u8_to_bits(input[i*4]), ...u8_to_bits(input[i*4+1]), ...u8_to_bits(input[i*4+2]), ...u8_to_bits(input[i*4+3])]);
   }
   return output;
 }
@@ -70,8 +71,39 @@ def decimalStringToField<N>(u8[N] string) -> field {
   assert(N < 77);
     field mut result = 0;
     for u32 i in 0..N {
-        field asField = u8ToField(string[i] - 48);
+        field asField = u8_to_field(string[i] - 48);
         result = result + asField * 10**(N-i-1);
     }
     return result;
+}
+
+
+// NOTE: needs testing?
+// modified from utils/casts, TODO: PR these to utils/casts
+// convert an array of bool to an array of u8
+// the sizes must match (one u32 for 32 bool) otherwise an error will happen
+def bool_array_to_u8_array<N, P>(bool[N] bits) -> u8[P] {
+    assert(N == 8 * P);
+
+    u8[P] mut res = [0; P];
+
+    for u32 i in 0..P {
+        res[i] = u8_from_bits(bits[8 * i..8 * (i + 1)]);
+    }
+
+    return res;
+}
+def u8_array_to_bool_array<N, P>(u8[N] input) -> bool[P] {
+    assert(P == 8 * N);
+
+    bool[P] mut res = [false; P];
+
+    for u32 i in 0..N {
+        bool[8] bits = u8_to_bits(input[i]);
+        for u32 j in 0..8 {
+            res[i * 8 + j] = bits[j];
+        }
+    }
+
+    return res;
 }

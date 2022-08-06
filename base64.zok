@@ -10,37 +10,7 @@
 
 from "EMBED" import u8_from_bits;
 from "EMBED" import u8_to_bits;
-
-// modified from utils/casts, TODO: PR these to utils/casts
-// convert an array of bool to an array of u8
-// the sizes must match (one u32 for 32 bool) otherwise an error will happen
-def bool_array_to_u8_array<N, P>(bool[N] bits) -> u8[P] {
-    assert(N == 8 * P);
-
-    u8[P] mut res = [0; P];
-
-    for u32 i in 0..P {
-        res[i] = u8_from_bits(bits[8 * i..8 * (i + 1)]);
-    }
-
-    return res;
-}
-def u8_array_to_bool_array<N, P>(u8[N] input) -> bool[P] {
-    assert(P == 8 * N);
-
-    bool[P] mut res = [false; P];
-
-    for u32 i in 0..N {
-        bool[8] bits = u8_to_bits(input[i]);
-        for u32 j in 0..8 {
-            res[i * 8 + j] = bits[j];
-        }
-    }
-
-    return res;
-}
-
-
+from "./utils" import u8_array_to_bool_array, bool_array_to_u8_array;
 
 
 
