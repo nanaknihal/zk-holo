@@ -21,12 +21,12 @@ const u8[SUB_START_LENGTH] SUB_START = [ 0x22, 0x63, 0x72, 0x65, 0x64, 0x73, 0x2
 // const u8[SUB_START_LENGTH] SUB_START = [ 0x2c, 0x22, 0x73, 0x75, 0x62, 0x22, 0x3a, 0x22 ]; // U8 representation of `,"sub":"`
 const u8[SUB_END_LENGTH] SUB_END = [ 0x22 ];//, 0x2c, 0x22 ]; // U8 representation of `","`
 
-const u32 EXP_START_LENGTH = 8;
+const u32 EXP_START_LENGTH = 7;
 const u32 EXP_END_LENGTH = 1;
 const u32 EXP_MIDDLE_LENGTH = 10;
 const u32 EXP_LENGTH = EXP_START_LENGTH + EXP_END_LENGTH + EXP_MIDDLE_LENGTH; 
 
-const u8[EXP_START_LENGTH] EXP_START = [ 0x22, 0x2c, 0x22, 0x65, 0x78, 0x70, 0x22, 0x3a ];
+const u8[EXP_START_LENGTH] EXP_START = [ 0x22, 0x65, 0x78, 0x70, 0x22, 0x3a, 0x22 ];
 const u8[EXP_END_LENGTH] EXP_END = [ 0x22 ];//, 0x2c, 0x22 ]; // U8 representation of `","`
 
 const u32 AUD_LENGTH = 14;
