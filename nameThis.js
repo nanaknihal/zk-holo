@@ -2,8 +2,10 @@ const { initialize } = require("zokrates-js");
 const fs = require("fs");
 const path = require("path");
 const { assert } = require("console");
-const { generateCircuit } = require("./generateCircuit")
-const { stringToPaddedU32NBy16Array } = require("./utils")
+const { generateCircuit } = require("./generateCircuit");
+const { stringToPaddedU32NBy16StringArray } = require("./utils");
+const { toU8StringArray } = require("./utils");
+const { toU32StringArray } = require("./utils");
 const { searchForPlainTextInBase64 } = require('wtfprotocol-helpers');
 const ethers = require("ethers");
 
@@ -48,11 +50,16 @@ const getSubParams = (jwt) => {
     
 }
 const subParams = getSubParams(jwt);
-const [subCommitment, subSecret] = [Buffer.from(subParams.hashed, "hex"), Buffer.from(subParams.key, "hex")]
+const [subCommitment, subSecret] = [toU32StringArray(Buffer.from(subParams.hashed, "hex")), toU8StringArray(Buffer.from(subParams.key, "hex"))];
 const tbs = `${header}.${payload}`;
-const paddedJwt = stringToPaddedU32NBy16Array(tbs);
-const digest = ethers.utils.sha256(Buffer.from(tbs));
-const expGreaterThan = 1651365253;
+const paddedJwt = stringToPaddedU32NBy16StringArray(tbs);
+const digest = toU32StringArray(
+    Buffer.from(
+        ethers.utils.sha256(Buffer.from(tbs)).replace("0x",""),
+        "hex"
+    )
+);
+const expGreaterThan = "1651365253";
 initialize().then((zokratesProvider) => {
 
     const [ circuitID, code ] = generateCircuit(circuitParams);
@@ -75,6 +82,7 @@ initialize().then((zokratesProvider) => {
         expGreaterThan, 
         expIdx
     ]
+    console.log("Inputs:", inputs)
 
     const { witness, output } = zokratesProvider.computeWitness(artifacts, inputs);
     // const parsedOut = Buffer.concat(JSON.parse(output).map(x=>Buffer.from(x.replace("0x",""), "hex")))
