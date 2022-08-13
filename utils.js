@@ -10,9 +10,9 @@ const googleJwt = 'eyJhbGciOiJSUzI1NiIsImtpZCI6Ijg2MTY0OWU0NTAzMTUzODNmNmI5ZDUxM
 const twitterJwt = 'eyJraWQiOiJvYWdZIn0.eyJjcmVkcyI6IlByb3RvY29sV3RmIiwiYXVkIjoiZ25vc2lzIiwicmFuZCI6IlMzS1I3WGtfUkc3R0tBYlVHQ2JiNHQ4all1UkhLVmpnc0FTeFYwME9zY1UiLCJleHAiOiIxNjUxMzY1MjUzIn0.WOUI40Dk4bZKszkgfBHsc3Bc0SAQ_cdB6W3F-oGmmY0FhMLfTiVvAFkNIOES_FAUfQlNqq47Gt-THrr6EMcNkOrC6W0nEYjHYn-VByE7xxRdZtSXS_OYDbw8bLQEeaNjcUnJZQ0HYXA0uy4JDNJKbhJCCcrEcK187vbqazpzSZ_tCgbSeqHCmwnakg5obqjrCslehJI8w_aSjEiewUB-fOtTz6S92KvDoozUzli6MjapNDQ8j-kz6wuDpM3EigRdjU8n60xqY0pOeiC8r-AHqPa6bh0ws7f7xrkki2gE0t4eiKEKjWHHKvjf9bgRKtj9G9PRTQVOS1fqF6BBCrqqHQ=='
 
 
-// const {tbs} = jwtProofParams(orcidJwt)
-// console.log(jwtProofParams(twitterJwt, 'ProtocolWtf', '"creds":"'))
-// console.log(jwtProofParams(orcidJwt, '0000-0002-2308-9517', '"sub":"'))
+// const {tbs} = jwtProofParamsV1(orcidJwt)
+// console.log(jwtProofParamsV1(twitterJwt, 'ProtocolWtf', '"creds":"'))
+// console.log(jwtProofParamsV1(orcidJwt, '0000-0002-2308-9517', '"sub":"'))
 // can't search by byte, because payload index is by
 
 const chunk = (arr, chunkSize) => {
@@ -86,7 +86,7 @@ const padBytesForSha256 = (bytes) => {
 
 // Converts a string the format which will be used as input to the zero knowledge proof circuit
 const stringToPaddedU32NBy16StringArray = (str) => 
-JSON.stringify(
+// JSON.stringify(
     chunk(
         toU32StringArray(
             padBytesForSha256(
@@ -95,7 +95,7 @@ JSON.stringify(
         ),
         16
     )
-)
+// )
 
 const stringToPaddedU32NBy16Array = (str) => 
     chunk(
@@ -113,114 +113,139 @@ const stringToPaddedU8Array = (str) =>
     )
 )
 
-// console.log(
-//     'padded',
-//     stringToPaddedU32NBy16Array(tbs)
-// )
-// console.log(
-//     'hashed',
-//     toU32StringArray(Buffer.from(ethers.utils.sha256(Buffer.from(tbs)).replace('0x',''), 'hex'))
-// )
+// // console.log(
+// //     'padded',
+// //     stringToPaddedU32NBy16Array(tbs)
+// // )
+// // console.log(
+// //     'hashed',
+// //     toU32StringArray(Buffer.from(ethers.utils.sha256(Buffer.from(tbs)).replace('0x',''), 'hex'))
+// // )
 
 
-/* @param {string} plaintext 
-* @param {string} b64
-* @param paddedLength
-* @param {integer} idxOffset added to all indices returned 
-* @returns {object} 
-* - index where shifted plaintext starts in b64. Up to two bytes can be subtracted from index
-* because of b64 offsets, so it can look the same in b64 which repeats every three characters.
-* - extended base64 from index up to paddedLength
-* - mask covering all characters from index to plaintext end with 255 and all characters after plaintext end with 0, for a binary mask
-* - masked version of extended base64, i.e. `mask & extendedBase64`
-*
-* base64 is grouped by three bytes -- 3 original characters for every 4 base64 characters
-* thus, 'string' encodes to four base64 characters. But these characters aren't a substring of 'astring'! having a totally changes the encoding
-* but do not fear: 'abcstring' does not change the encoding of 'string' as abc has length 3; it's independent
-* there's only a 1/3 chance the '","sub":"...","' base64 encoding is actually a substring of the payload's base64 encoding
-* that only happens when '","sub":"...","' starts at a payload index which is divisible by three
-* so, instead of proving the presence of '","sub":"...","', one can prove the presence of 'x","sub":"...","' or 'xy","sub":"...","' to make it divisible by three
-* Shifting left doesn't reveal the length of the sandwich, if the sandwich is '"sub":', rather than '","sub"'
-* Shifting left will, at most, reveal '",' and whether the previous part of the payload is a number of chars divisble by 3.
-*/
-const b64ProofParams = (plaintext, b64, extendedLengthB64, idxOffset=0) => {
-    // Find byte at which text occurs in the *plaintext* version
-    const [startPt, endPt] = searchForPlainTextInBase64(plaintext, b64)
+// /* @param {string} plaintext 
+// * @param {string} b64
+// * @param paddedLength
+// * @param {integer} idxOffset added to all indices returned 
+// * @returns {object} 
+// * - index where shifted plaintext starts in b64. Up to two bytes can be subtracted from index
+// * because of b64 offsets, so it can look the same in b64 which repeats every three characters.
+// * - extended base64 from index up to paddedLength
+// * - mask covering all characters from index to plaintext end with 255 and all characters after plaintext end with 0, for a binary mask
+// * - masked version of extended base64, i.e. `mask & extendedBase64`
+// *
+// * base64 is grouped by three bytes -- 3 original characters for every 4 base64 characters
+// * thus, 'string' encodes to four base64 characters. But these characters aren't a substring of 'astring'! having a totally changes the encoding
+// * but do not fear: 'abcstring' does not change the encoding of 'string' as abc has length 3; it's independent
+// * there's only a 1/3 chance the '","sub":"...","' base64 encoding is actually a substring of the payload's base64 encoding
+// * that only happens when '","sub":"...","' starts at a payload index which is divisible by three
+// * so, instead of proving the presence of '","sub":"...","', one can prove the presence of 'x","sub":"...","' or 'xy","sub":"...","' to make it divisible by three
+// * Shifting left doesn't reveal the length of the sandwich, if the sandwich is '"sub":', rather than '","sub"'
+// * Shifting left will, at most, reveal '",' and whether the previous part of the payload is a number of chars divisble by 3.
+// */
+// const b64ProofParamsV1 = (plaintext, b64, extendedLengthB64, idxOffset=0) => {
+//     // Find byte at which text occurs in the *plaintext* version
+//     const [startPt, endPt] = searchForPlainTextInBase64(plaintext, b64)
 
-    // find where the plaintext starts in base64
-    const shiftedStartPt = startPt - startPt % 3
-    const shiftedStartB64 = shiftedStartPt * 4 / 3
+//     // find where the plaintext starts in base64
+//     const shiftedStartPt = startPt - startPt % 3
+//     const shiftedStartB64 = shiftedStartPt * 4 / 3
 
-    // and where the plaintext ends in base64
-    const lengthPt = endPt - startPt
-    const shiftedLengthPt = lengthPt - lengthPt % 3
-    const shiftedLengthB64 = shiftedLengthPt * 4 / 3
+//     // and where the plaintext ends in base64
+//     const lengthPt = endPt - startPt
+//     const shiftedLengthPt = lengthPt - lengthPt % 3
+//     const shiftedLengthB64 = shiftedLengthPt * 4 / 3
 
-    // String that will be found in the base64 which includes base64 conversion of: *remainder* characters followed by plaintext
-    const shiftedPtToB64 = b64.slice(shiftedStartB64, shiftedStartB64+shiftedLengthB64)
-    const extendedPtToB64 = b64.slice(shiftedStartB64, shiftedStartB64+extendedLengthB64)
-    // Mask to hide all the unimportant, potentially private characters after the plaintext
-    const mask =  'FF'.repeat(shiftedLengthB64) + '00'.repeat(extendedLengthB64 - shiftedLengthB64)
-    const masked = and(Buffer.from(extendedPtToB64), Buffer.from(mask, 'hex'))
+//     // String that will be found in the base64 which includes base64 conversion of: *remainder* characters followed by plaintext
+//     const shiftedPtToB64 = b64.slice(shiftedStartB64, shiftedStartB64+shiftedLengthB64)
+//     const extendedPtToB64 = b64.slice(shiftedStartB64, shiftedStartB64+extendedLengthB64)
+//     // Mask to hide all the unimportant, potentially private characters after the plaintext
+//     const mask =  'FF'.repeat(shiftedLengthB64) + '00'.repeat(extendedLengthB64 - shiftedLengthB64)
+//     const masked = and(Buffer.from(extendedPtToB64), Buffer.from(mask, 'hex'))
     
-    return {
-                // searchString: JSON.stringify(toU8Array(Buffer.from(shiftedPtToB64))),
-                // extended : JSON.stringify(toU8Array(Buffer.from(extendedPtToB64))),
-                mask: JSON.stringify(toU8Array(Buffer.from(mask, 'hex'))),
-                masked: JSON.stringify(toU8Array(masked)),
-                idx: idxOffset + shiftedStartB64,
-           }
+//     return {
+//                 // searchString: JSON.stringify(toU8Array(Buffer.from(shiftedPtToB64))),
+//                 // extended : JSON.stringify(toU8Array(Buffer.from(extendedPtToB64))),
+//                 mask: JSON.stringify(toU8Array(Buffer.from(mask, 'hex'))),
+//                 masked: JSON.stringify(toU8Array(masked)),
+//                 idx: idxOffset + shiftedStartB64,
+//            }
 
-}
-const jwtProofParams = (jwt, options) => {
-    const {aud, audPaddedLength, sub, subPaddedLength, exp} = options
-    const expPaddedLength = 24
-    assert((audPaddedLength % 4 == 0) && (subPaddedLength % 4 == 0), 'base64 wraps around every 4 characters (3 ascii characters is 4 base64 characters. padded sandwich length must be a multiple of 4 to avoid invalid strings being searched for')
-    const [header, payload, signature] = jwt.split('.')
-    const tbs = `${header}.${payload}`
+// }
+// const jwtProofParamsV1 = (jwt, options) => {
+//     const {aud, audPaddedLength, sub, subPaddedLength, exp} = options
+//     const expPaddedLength = 24
+//     assert((audPaddedLength % 4 == 0) && (subPaddedLength % 4 == 0), 'base64 wraps around every 4 characters (3 ascii characters is 4 base64 characters. padded sandwich length must be a multiple of 4 to avoid invalid strings being searched for')
+//     const [header, payload, signature] = jwt.split('.')
+//     const tbs = `${header}.${payload}`
     
-    // console.log(sandwich, sandwichPayloadIdx, sandwichPayloadEndIdx)
+//     // console.log(sandwich, sandwichPayloadIdx, sandwichPayloadEndIdx)
 
     
-    return {
-        // tbs: tbs, 
-        preimage: JSON.stringify(stringToPaddedU32NBy16Array(tbs)),
-        flattend: JSON.stringify(stringToPaddedU8Array(tbs)),
-        hash: JSON.stringify(toU32Array(Buffer.from(ethers.utils.sha256(Buffer.from(tbs)).replace('0x',''), 'hex'))),
-        aud: b64ProofParams(aud, payload, audPaddedLength, header.length + 1),
-        sub: b64ProofParams(sub, payload, subPaddedLength, header.length + 1),
-        exp: b64ProofParams(exp, payload, expPaddedLength, header.length + 1),
-    }
-    // {
-    //     tbs: tbs,
-    //     sandwich: sandwichB64,
-    //     sandwichPadded: sandwichPaddedB64,
-    //     sandwichMask: sandwichMaskB64,
-    //     sandwichMasked: sandwichMaskedB64,
-    //     sandwichStartB64: header.length+1 + shiftedStartInB64,
-    //     preimage: JSON.stringify(stringToPaddedU32NBy16Array(tbs)),
-    //     hash: JSON.stringify(toU32Array(Buffer.from(ethers.utils.sha256(Buffer.from(tbs)).replace('0x',''), 'hex')))
-    // }
-}
+//     return {
+//         // tbs: tbs, 
+//         preimage: JSON.stringify(stringToPaddedU32NBy16Array(tbs)),
+//         flattend: JSON.stringify(stringToPaddedU8Array(tbs)),
+//         hash: JSON.stringify(toU32Array(Buffer.from(ethers.utils.sha256(Buffer.from(tbs)).replace('0x',''), 'hex'))),
+//         aud: b64ProofParamsV1(aud, payload, audPaddedLength, header.length + 1),
+//         sub: b64ProofParamsV1(sub, payload, subPaddedLength, header.length + 1),
+//         exp: b64ProofParamsV1(exp, payload, expPaddedLength, header.length + 1),
+//     }
+//     // {
+//     //     tbs: tbs,
+//     //     sandwich: sandwichB64,
+//     //     sandwichPadded: sandwichPaddedB64,
+//     //     sandwichMask: sandwichMaskB64,
+//     //     sandwichMasked: sandwichMaskedB64,
+//     //     sandwichStartB64: header.length+1 + shiftedStartInB64,
+//     //     preimage: JSON.stringify(stringToPaddedU32NBy16Array(tbs)),
+//     //     hash: JSON.stringify(toU32Array(Buffer.from(ethers.utils.sha256(Buffer.from(tbs)).replace('0x',''), 'hex')))
+//     // }
+// }
 
+
+// const jwtProofParamsV2 = (jwt, options) => {
+//     const {aud, sub, exp} = options
+//     const [header, payload, signature] = jwt.split('.')
+//     const tbs = `${header}.${payload}`
+    
+//     // console.log(sandwich, sandwichPayloadIdx, sandwichPayloadEndIdx)
+
+    
+//     return {
+//         // tbs: tbs, 
+//         preimage: JSON.stringify(stringToPaddedU32NBy16Array(tbs)),
+//         digest: JSON.stringify(toU32Array(Buffer.from(ethers.utils.sha256(Buffer.from(tbs)).replace('0x',''), 'hex'))),
+//         aud: jwt
+//         sub: 
+//         exp: 
+//     }
+// }
 /*testing*/
+// let twitterParams = jwtProofParamsV1(twitterJwt, 
+//     {
+//         sub:'"creds":"ProtocolWtf","', 
+//         subPaddedLength: 48,
+//         aud:'"aud":"gnosis","',
+//         audPaddedLength: 24,
+//         exp:'"exp":"1651365253"}'
+//     })
+// let googleParams = jwtProofParamsV1(googleJwt, 
+//     {
+//         sub:'"sub":"100787844473172298543","', 
+//         subPaddedLength: 48,
+//         aud:'"aud":"254984500566-3qis54mofeg5edogaujrp8rb7pbp9qtn.apps.googleusercontent.com","',
+//         audPaddedLength: 108,
+//         exp:',"exp":1651352873,"'
+//     })
+// // console.log(toU32StringArray(Buffer.from(twitterParams.tbs)).length, Buffer.from(twitterParams.tbs).length)
+// console.log(twitterParams)
+// console.log(googleParams)
 
-let twitterParams = jwtProofParams(twitterJwt, 
-    {
-        sub:'"creds":"ProtocolWtf","', 
-        subPaddedLength: 48,
-        aud:'"aud":"gnosis","',
-        audPaddedLength: 24,
-        exp:'"exp":"1651365253"}'
-    })
-let googleParams = jwtProofParams(googleJwt, 
-    {
-        sub:'"sub":"100787844473172298543","', 
-        subPaddedLength: 48,
-        aud:'"aud":"254984500566-3qis54mofeg5edogaujrp8rb7pbp9qtn.apps.googleusercontent.com","',
-        audPaddedLength: 108,
-        exp:',"exp":1651352873,"'
-    })
-// console.log(toU32StringArray(Buffer.from(twitterParams.tbs)).length, Buffer.from(twitterParams.tbs).length)
-console.log(twitterParams)
-console.log(googleParams)
+
+module.exports = {
+    stringToPaddedU32NBy16Array : stringToPaddedU32NBy16Array,
+    stringToPaddedU32NBy16StringArray : stringToPaddedU32NBy16StringArray,
+    toU8StringArray : toU8StringArray,
+    toU32StringArray : toU32StringArray
+}
