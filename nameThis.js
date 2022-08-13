@@ -1,7 +1,12 @@
-const { initialize } = require('zokrates-js')
+const { initialize } = require("zokrates-js");
 const fs = require("fs");
 const path = require("path");
-const { assert } = require('console');
+const { assert } = require("console");
+const { generateCircuit } = require("./generateCircuit")
+const { stringToPaddedU32NBy16Array } = require("./utils")
+const { searchForPlainTextInBase64 } = require('wtfprotocol-helpers');
+const ethers = require("ethers");
+
 const compileOptions = {
     location: "jsVersion.zok", // location of the root module
     resolveCallback: (from, to) => {
@@ -12,7 +17,8 @@ const compileOptions = {
     }
 };
 
-const jwt = 'eyJraWQiOiJvYWdZIn0.eyJjcmVkcyI6IlByb3RvY29sV3RmIiwiYXVkIjoiZ25vc2lzIiwicmFuZCI6IlMzS1I3WGtfUkc3R0tBYlVHQ2JiNHQ4all1UkhLVmpnc0FTeFYwME9zY1UiLCJleHAiOiIxNjUxMzY1MjUzIn0�'
+
+const jwt = 'eyJraWQiOiJvYWdZIn0.eyJjcmVkcyI6IlByb3RvY29sV3RmIiwiYXVkIjoiZ25vc2lzIiwicmFuZCI6IlMzS1I3WGtfUkc3R0tBYlVHQ2JiNHQ4all1UkhLVmpnc0FTeFYwME9zY1UiLCJleHAiOiIxNjUxMzY1MjUzIn0'
 const circuitParams = {
     blocks : Math.ceil(jwt.length / 64),// How many blocks of 512 bits are there, rounded up?
     subStart : '"creds":"',
@@ -25,102 +31,39 @@ const circuitParams = {
     shiftB64 : 0 // Either 0, 1, 2, or 3 -- shifts the bits of the b64-decoded jwt by shiftB64 by adding 0, 1, 2, or 3 padding characters before decoding the jwt 
 }
 
-// A paramstring is used as a UUID for a circuit. Thus, a circuit can be generated with circuitParams and can be named ${paramString} so it is clear exactly what the circuit does
-const paramString = Buffer.from(Object.values(circuitParams).join("_")).toString("base64");
-try {
-    const provingKey = fs.readFileSync(`${paramString}.proving.key`);
-} catch(e) {
-    console.error("could not find a proving key for circuit with params", circuitParams);
+const [header, payload, signature] = jwt.split(".");
+// Paylod offset in plaintext = header length (converted to plaintext, so 3/4 the length) + 1 for period
+const payloadOffset = Math.ceil(header.length * 3 / 4) + 1;
+const [subIdx, _1] = payloadOffset + searchForPlainTextInBase64(circuitParams.subStart, payload);
+const [expIdx, _2] = payloadOffset + searchForPlainTextInBase64(circuitParams.expStart, payload);
+const [audIdx, _3] = payloadOffset + searchForPlainTextInBase64(circuitParams.aud,      payload);
+
+// This should be replaced with a call to the subSecretOracle with the JWT as proof that we are allowed to obtain the subSecret
+const getSubParams = (jwt) => {
+    return {
+        input: "ProtocolWtf",
+        key: "d05bfc1feaa3e042600482b51d73914c44d37a40b40d0633170c40d77ea818ca25ead4c004d0b08d2e21b3736d35d364775c096610",
+        hashed: "51865586b53355f1bb12a8b989746d333093b7b4abc112645de89998f3d76a4d"
+    }
+    
 }
-
-assert([0,1,2,3].includes(circuitParams.shiftB64))
-assert(circuitParams.subStart.length + circuitParams.subMiddleLen + circuitParams.subEnd.length <= 48) // Ensure there is enough room for a 16-byte subSecret
-
-const constants = `
-const u32 SUB_START_LENGTH = ${circuitParams.subStart.length};
-const u32 SUB_END_LENGTH = ${circuitParams.subEnd.length};
-const u32 SUB_MIDDLE_LENGTH = ${circuitParams.subMiddleLen};
-const u32 SUB_LENGTH = SUB_START_LENGTH + SUB_END_LENGTH + SUB_MIDDLE_LENGTH;
-const u32 SUB_SECRET_LENGTH = 64 - SUB_MIDDLE_LENGTH; // Length of sub claim, including SUB_START and SUB_END. SHOULD NOT BE LESS THAN 16 BYTES FOR SECURE RANDOMNESS
-
-const u8[SUB_START_LENGTH] SUB_START = [ ${Buffer.from(circuitParams.subStart).join(', ')} ]; 
-const u8[SUB_END_LENGTH] SUB_END = [ ${Buffer.from(circuitParams.subEnd).join(', ')} ];
-
-const u32 EXP_START_LENGTH = ${circuitParams.expStart.length};
-const u32 EXP_END_LENGTH = ${circuitParams.expEnd.length};
-const u32 EXP_MIDDLE_LENGTH = ${circuitParams.expMiddleLen};
-const u32 EXP_LENGTH = EXP_START_LENGTH + EXP_END_LENGTH + EXP_MIDDLE_LENGTH; 
-
-const u8[EXP_START_LENGTH] EXP_START = [ ${Buffer.from(circuitParams.expStart).join(', ')} ];
-const u8[EXP_END_LENGTH] EXP_END = [ ${Buffer.from(circuitParams.expEnd).join(', ')} ];
-
-const u32 AUD_LENGTH = ${circuitParams.aud.length};
-const u8[AUD_LENGTH] AUD = [ ${Buffer.from(circuitParams.aud).join(', ')} ];
-
-const u32 JWT_BLOCKS = ${circuitParams.blocks}; // represents length of padded JWT (base64 JWT with periods, header and payload, no signature) in 512-byte multiples 
-const u32 JWT_LENGTH_PLAINTEXT = JWT_BLOCKS * 48;
-const u32 JWT_NUMBITS_PLAINTEXT = JWT_BLOCKS * 384; // how many bits a JWT is in plaintext
-
-const u32 SHIFT_BASE64 = ${circuitParams.shiftB64}; // can be either 0,1,2,3. Different versions should be compiled when it's 0,1,2, or 3
-`
+const subParams = getSubParams(jwt);
+const [subCommitment, subSecret] = [Buffer.from(subParams.hashed, "hex"), Buffer.from(subParams.key, "hex")]
+const tbs = `${header}.${payload}`;
+const paddedJwt = stringToPaddedU32NBy16Array(tbs);
+const digest = ethers.utils.sha256(Buffer.from(tbs));
+const expGreaterThan = 1651365253;
 initialize().then((zokratesProvider) => {
 
-const source = `
-from "./base64" import fromBase64;
-from "./utils" import decimalStringToField, unflatten, flatten, substringAt, bool_array_to_u8_array, u8_array_to_bool_array;
-from "EMBED" import u32_to_bits as u32ToBits;
-from "EMBED" import u32_from_bits as u32FromBits;
-from "EMBED" import u8_to_bits as u8ToBits;
-from "EMBED" import u8_from_bits as u8FromBits;
-import "hashes/sha256/sha256" as sha256;
-import "hashes/blake2/blake2s" as macHash;
-
-
-${constants}
-
-// Formats u32[JWT_BLOCKS][16] JWT into a u8[JWT_BLOCKS*48] array of base64-decoded JWT content. This content is shifted by two bits so the payload after the . is readable
-def payloadFriendlyFormat(u32[JWT_BLOCKS][16] paddedJwt) -> u8[JWT_LENGTH_PLAINTEXT] {
-  // Flatten to bytes to search for aud, sub, and exp substring
-  u8[JWT_BLOCKS*64] flattened_ = flatten(paddedJwt);
-  u8[JWT_BLOCKS*64] flattened = [...[0; SHIFT_BASE64], ...flattened_[SHIFT_BASE64..JWT_BLOCKS*64]];
-  // Convert from base64 to string search for aud, sub, and exp substring
-  u8[JWT_BLOCKS*48] plaintext = fromBase64(flattened);
-  return plaintext;
-}
-
-// Verifies a JWT
-def main(private u32[JWT_BLOCKS][16] paddedJwt, u32[8] jwtDigest, u32[8] subCommitment, private u8[SUB_SECRET_LENGTH] subSecret, private u32 subIdx, private u32 audIdx, field expGreaterThan, private u32 expIdx) -> bool {
-  u8[JWT_LENGTH_PLAINTEXT] formatted = payloadFriendlyFormat(paddedJwt);
-  // Check that JWT contains valid sub
-  u8[SUB_START_LENGTH]  proposedSubStart   = substringAt(formatted, subIdx);
-  u8[SUB_MIDDLE_LENGTH] proposedSubMiddle  = substringAt(formatted, subIdx + SUB_START_LENGTH);
-  u8[SUB_END_LENGTH]    proposedSubEnd     = substringAt(formatted, subIdx + SUB_START_LENGTH + SUB_MIDDLE_LENGTH);
-
-  assert(proposedSubStart == SUB_START);
-  assert(proposedSubEnd == SUB_END);
-  assert(macHash(unflatten::<64,1>([...proposedSubMiddle, ...subSecret])) == subCommitment);
-
-  // Check that JWT contains valid aud
-  u8[AUD_LENGTH] proposedAud = substringAt(formatted, audIdx);
-  assert(proposedAud == AUD);
-
-  // Check that JWT contains valid exp
-  u8[EXP_START_LENGTH]  proposedExpStart  = substringAt(formatted, expIdx);
-  u8[EXP_MIDDLE_LENGTH] proposedExpMiddle = substringAt(formatted, expIdx + EXP_START_LENGTH);
-  u8[EXP_END_LENGTH]    proposedExpEnd    = substringAt(formatted, expIdx + EXP_START_LENGTH + EXP_MIDDLE_LENGTH);
-  assert(proposedExpStart == EXP_START);
-  assert(proposedExpEnd == EXP_END);
-  assert(decimalStringToField(proposedExpMiddle) > expGreaterThan);
-
-  // Check that JWT hashes to jwtDigest
-  assert(sha256(paddedJwt) == jwtDigest);
-
-  return true;
-}`
+    const [ circuitID, code ] = generateCircuit(circuitParams);
+    console.log('code is')
+    console.log(code)
 
     // compilation
-    const artifacts = zokratesProvider.compile(source, compileOptions);
+    const artifacts = zokratesProvider.compile(code, compileOptions);
 
+    console.log('done compiling')
+    
     // computation
     const inputs = [
         paddedJwt, 
@@ -132,6 +75,7 @@ def main(private u32[JWT_BLOCKS][16] paddedJwt, u32[8] jwtDigest, u32[8] subComm
         expGreaterThan, 
         expIdx
     ]
+
     const { witness, output } = zokratesProvider.computeWitness(artifacts, inputs);
     // const parsedOut = Buffer.concat(JSON.parse(output).map(x=>Buffer.from(x.replace("0x",""), "hex")))
     console.log(
