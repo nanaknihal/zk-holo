@@ -1,6 +1,7 @@
 const { initialize } = require("zokrates-js");
 const fs = require("fs");
 const path = require("path");
+const { randomBytes } = require("crypto");
 const { assert } = require("console");
 const { generateCircuit, generateAndSaveCircuit } = require("./generateCircuit");
 const { stringToPaddedU32NBy16StringArray } = require("./utils");
@@ -8,6 +9,9 @@ const { toU8StringArray } = require("./utils");
 const { toU32StringArray } = require("./utils");
 const { searchForPlainTextInBase64 } = require('wtfprotocol-helpers');
 const ethers = require("ethers");
+const util = require("util");
+const exec = util.promisify(require("child_process").exec); // wrapper for exec that allows async/await for its completion (https://stackoverflow.com/questions/30763496/how-to-promisify-nodes-child-process-exec-and-child-process-execfile-functions)
+
 
 const compileOptions = {
     location: "jsVersion.zok", // location of the root module
@@ -85,12 +89,10 @@ initialize().then((zokratesProvider) => {
         expGreaterThan, 
         expIdx
     ]
-    const cliInputs = argsToCLIArgs(inputs);
 
     console.log("Inputs:", inputs);
-    console.log("CLIInputs", cliInputs);
 
-    const { witness, output } = zokratesProvider.computeWitness(artifacts, inputs);
+    // const { witness, output } = zokratesProvider.computeWitness(artifacts, inputs);
     // const parsedOut = Buffer.concat(JSON.parse(output).map(x=>Buffer.from(x.replace("0x",""), "hex")))
 
     // run setup
@@ -100,9 +102,33 @@ initialize().then((zokratesProvider) => {
     // const proof = zokratesProvider.generateProof(artifacts.program, witness);
     // console.log("proof generation took", (Date.now()-start)/1000, "s")
     
-
+    generateProofCLI(circuitID, inputs).then(x=>console.log(x));
 
 });
+
+async function generateProofCLI(circuitID, inputs) {
+    const cliArgs = argsToCLIArgs(inputs);
+    // Create a temporary name for current tasks to be deleted once CLI execution is done:
+    const tmpValue = randomBytes(16).toString("hex");
+    const binaryPath = `compiled/${circuitID}.out`;
+    const provingKeyPath = `pvkeys/${circuitID}.proving.key`;
+    const tmpWitnessPath = `tmp/${tmpValue}.${circuitID}.witness`;
+    const tmpProofPath = `tmp/${tmpValue}.${circuitID}.proof.json`;
+
+    // Execute the command
+    try {
+        const {stdout, stderr} = await exec(`zokrates compute-witness -i ${binaryPath} -o ${tmpWitnessPath} -a ${cliArgs}; zokrates generate-proof -i ${binaryPath} -w ${tmpWitnessPath} -j ${tmpProofPath} -p ${provingKeyPath}; rm ${tmpWitnessPath}`);
+        console.log(stdout)
+        console.error(stderr)
+    } catch(e) {
+        console.error(e);
+    }
+
+    // Read the proof file, then delete it, then return it
+    const retval = JSON.parse(fs.readFileSync(tmpProofPath));
+    exec(`rm ${tmpProofPath}`);
+    return retval
+}
 
 // To convert zokrates-js args to zokrates-cli args
 function argsToCLIArgs (args) {
