@@ -2,7 +2,7 @@ const { initialize } = require("zokrates-js");
 const fs = require("fs");
 const path = require("path");
 const { assert } = require("console");
-const { generateCircuit } = require("./generateCircuit");
+const { generateCircuit, generateAndSaveCircuit } = require("./generateCircuit");
 const { stringToPaddedU32NBy16StringArray } = require("./utils");
 const { toU8StringArray } = require("./utils");
 const { toU32StringArray } = require("./utils");
@@ -35,7 +35,7 @@ const circuitParams = {
 
 const [header, payload, signature] = jwt.split(".");
 // Paylod offset in plaintext = header length (converted to plaintext, so 3/4 the length) + 1 for period
-const payloadOffset = Math.ceil(header.length * 3 / 4);
+const payloadOffset = Math.ceil((header.length + 1)* 3 / 4);
                                                                                                 // Zokrates likes string formats
 const subIdx = (payloadOffset + searchForPlainTextInBase64(circuitParams.subStart, payload)[0]) .toString();
 const expIdx = (payloadOffset + searchForPlainTextInBase64(circuitParams.expStart, payload)[0]) .toString();
@@ -65,6 +65,7 @@ const expGreaterThan = "1651365252";
 initialize().then((zokratesProvider) => {
 
     const [ circuitID, code ] = generateCircuit(circuitParams);
+    // a = generateAndSaveCircuit(circuitParams);
     console.log('code is')
     console.log(code)
 
@@ -84,17 +85,29 @@ initialize().then((zokratesProvider) => {
         expGreaterThan, 
         expIdx
     ]
-    console.log('sub exp aud whaterver',subIdx,expIdx,audIdx,3)
+    const cliInputs = argsToCLIArgs(inputs);
 
-    console.log("Inputs:", inputs)
+    console.log("Inputs:", inputs);
+    console.log("CLIInputs", cliInputs);
 
     const { witness, output } = zokratesProvider.computeWitness(artifacts, inputs);
     // const parsedOut = Buffer.concat(JSON.parse(output).map(x=>Buffer.from(x.replace("0x",""), "hex")))
-    console.log(
-        output,
-        // Buffer.from(JSON.parse(output).join('').replaceAll('0x',''), 'hex').toString()
-    )
-    console.log(
-        // parsedOut.toString("hex"), parsedOut.toString()
-    )
+
+    // run setup
+    // const keypair = zokratesProvider.setup(artifacts.program);
+    // const start = Date.now()
+    // // generate proof
+    // const proof = zokratesProvider.generateProof(artifacts.program, witness);
+    // console.log("proof generation took", (Date.now()-start)/1000, "s")
+    
+
+
 });
+
+// To convert zokrates-js args to zokrates-cli args
+function argsToCLIArgs (args) {
+    return args.map(x=>JSON.stringify(x))
+    .join(``)
+    .replace(/\"|,|\[|\]/g, ` `)
+    .replace(/\s+/g, ` `)
+}
