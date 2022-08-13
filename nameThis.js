@@ -35,10 +35,11 @@ const circuitParams = {
 
 const [header, payload, signature] = jwt.split(".");
 // Paylod offset in plaintext = header length (converted to plaintext, so 3/4 the length) + 1 for period
-const payloadOffset = Math.ceil(header.length * 3 / 4) + 1;
-const [subIdx, _1] = payloadOffset + searchForPlainTextInBase64(circuitParams.subStart, payload);
-const [expIdx, _2] = payloadOffset + searchForPlainTextInBase64(circuitParams.expStart, payload);
-const [audIdx, _3] = payloadOffset + searchForPlainTextInBase64(circuitParams.aud,      payload);
+const payloadOffset = Math.ceil(header.length * 3 / 4);
+                                                                                                // Zokrates likes string formats
+const subIdx = (payloadOffset + searchForPlainTextInBase64(circuitParams.subStart, payload)[0]) .toString();
+const expIdx = (payloadOffset + searchForPlainTextInBase64(circuitParams.expStart, payload)[0]) .toString();
+const audIdx = (payloadOffset + searchForPlainTextInBase64(circuitParams.aud,      payload)[0]) .toString();
 
 // This should be replaced with a call to the subSecretOracle with the JWT as proof that we are allowed to obtain the subSecret
 const getSubParams = (jwt) => {
@@ -59,7 +60,8 @@ const digest = toU32StringArray(
         "hex"
     )
 );
-const expGreaterThan = "1651365253";
+const expGreaterThan = "1651365252";
+
 initialize().then((zokratesProvider) => {
 
     const [ circuitID, code ] = generateCircuit(circuitParams);
@@ -82,13 +84,15 @@ initialize().then((zokratesProvider) => {
         expGreaterThan, 
         expIdx
     ]
+    console.log('sub exp aud whaterver',subIdx,expIdx,audIdx,3)
+
     console.log("Inputs:", inputs)
 
     const { witness, output } = zokratesProvider.computeWitness(artifacts, inputs);
     // const parsedOut = Buffer.concat(JSON.parse(output).map(x=>Buffer.from(x.replace("0x",""), "hex")))
     console.log(
         output,
-        Buffer.from(JSON.parse(output).join('').replaceAll('0x',''), 'hex').toString()
+        // Buffer.from(JSON.parse(output).join('').replaceAll('0x',''), 'hex').toString()
     )
     console.log(
         // parsedOut.toString("hex"), parsedOut.toString()
