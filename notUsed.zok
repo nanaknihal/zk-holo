@@ -1,0 +1,81 @@
+
+  from "./base64" import fromBase64;
+  from "./utils" import decimalStringToField, unflatten, flatten, substringAt, bool_array_to_u8_array, u8_array_to_bool_array;
+  from "EMBED" import u32_to_bits as u32ToBits;
+  from "EMBED" import u32_from_bits as u32FromBits;
+  from "EMBED" import u8_to_bits as u8ToBits;
+  from "EMBED" import u8_from_bits as u8FromBits;
+  import "hashes/sha256/sha256" as sha256;
+  import "hashes/blake2/blake2s" as macHash;
+
+
+  
+  const u32 SUB_START_LENGTH = 7;
+  const u32 SUB_END_LENGTH = 1;
+  const u32 SUB_MIDDLE_LENGTH = 21;
+  const u32 SUB_LENGTH = SUB_START_LENGTH + SUB_END_LENGTH + SUB_MIDDLE_LENGTH;
+  const u32 SUB_SECRET_LENGTH = 64 - SUB_MIDDLE_LENGTH; // Length of sub claim, including SUB_START and SUB_END. SHOULD NOT BE LESS THAN 16 BYTES FOR SECURE RANDOMNESS
+
+  const u8[SUB_START_LENGTH] SUB_START = [ 34, 115, 117, 98, 34, 58, 34 ]; 
+  const u8[SUB_END_LENGTH] SUB_END = [ 34 ];
+
+  const u32 EXP_START_LENGTH = 6;
+  const u32 EXP_END_LENGTH = 1;
+  const u32 EXP_MIDDLE_LENGTH = 10;
+  const u32 EXP_LENGTH = EXP_START_LENGTH + EXP_END_LENGTH + EXP_MIDDLE_LENGTH; 
+
+  const u8[EXP_START_LENGTH] EXP_START = [ 34, 101, 120, 112, 34, 58 ];
+  const u8[EXP_END_LENGTH] EXP_END = [ 44 ];
+
+  const u32 AUD_LENGTH = 72;
+  const u8[AUD_LENGTH] AUD = [ 50, 53, 52, 57, 56, 52, 53, 48, 48, 53, 54, 54, 45, 51, 113, 105, 115, 53, 52, 109, 111, 102, 101, 103, 53, 101, 100, 111, 103, 97, 117, 106, 114, 112, 56, 114, 98, 55, 112, 98, 112, 57, 113, 116, 110, 46, 97, 112, 112, 115, 46, 103, 111, 111, 103, 108, 101, 117, 115, 101, 114, 99, 111, 110, 116, 101, 110, 116, 46, 99, 111, 109 ];
+
+  const u32 JWT_BLOCKS = 14; // represents length of padded JWT (base64 JWT with periods, header and payload, no signature) in 512-byte multiples 
+  const u32 JWT_LENGTH_BASE64 = JWT_BLOCKS * 64;
+  const u32 HEADER_LENGTH_BASE64 = 102; // how long is eyJh... (excluding the period)
+  const u32 PAYLOAD_LENGTH_BASE64_ = JWT_LENGTH_BASE64 - HEADER_LENGTH_BASE64 - 1; // 1 for . between payload and header
+  const u32 PAYLOAD_BASE64_REMAINDER = PAYLOAD_LENGTH_BASE64_ % 4;
+  const u32 PAYLOAD_LENGTH_BASE64 = PAYLOAD_LENGTH_BASE64_ - PAYLOAD_BASE64_REMAINDER; // Floor when divided by 4 so it's a valid base64 length
+  const u32 PAYLOAD_LENGTH_PLAINTEXT = PAYLOAD_LENGTH_BASE64 * 3 / 4;
+  
+
+  // Formats u32[JWT_BLOCKS][16] JWT into a u8[JWT_BLOCKS*48] array of base64-decoded JWT content. This content is shifted by two bits so the payload after the . is readable
+  def payloadFromPaddedJWT(u32[JWT_BLOCKS][16] paddedJwt) -> u8[PAYLOAD_LENGTH_PLAINTEXT] {
+    // Flatten to bytes to search for aud, sub, and exp substring
+    u8[JWT_LENGTH_BASE64] flattened = flatten(paddedJwt);
+    u8[PAYLOAD_LENGTH_BASE64] payloadB64 = flattened[HEADER_LENGTH_BASE64+1..JWT_LENGTH_BASE64-PAYLOAD_BASE64_REMAINDER];
+    // Convert from base64 to string search for aud, sub, and exp substring
+    u8[PAYLOAD_LENGTH_PLAINTEXT] plaintext = fromBase64(payloadB64);
+    return plaintext;
+  }
+
+  // Verifies a JWT
+  def main(private u32[JWT_BLOCKS][16] paddedJwt, u32[8] jwtDigest, u32[8] subCommitment, private u8[SUB_SECRET_LENGTH] subSecret, private u32 subIdx, private u32 audIdx, field expGreaterThan, private u32 expIdx) -> u8[PAYLOAD_LENGTH_PLAINTEXT] {//u8[SUB_MIDDLE_LENGTH] {
+    u8[PAYLOAD_LENGTH_PLAINTEXT] formatted = payloadFromPaddedJWT(paddedJwt);
+    return formatted;
+    // // Check that JWT contains valid sub
+    // u8[SUB_START_LENGTH]  proposedSubStart   = substringAt(formatted, subIdx + 1);
+    // u8[SUB_MIDDLE_LENGTH] proposedSubMiddle  = substringAt(formatted, subIdx + 1 + SUB_START_LENGTH);
+    // u8[SUB_END_LENGTH]    proposedSubEnd     = substringAt(formatted, subIdx + 1 + SUB_START_LENGTH + SUB_MIDDLE_LENGTH);
+
+    // // assert(proposedSubStart == SUB_START); //note: this is line 58 of the file
+    // // assert(proposedSubEnd == SUB_END);
+    // // assert(macHash(unflatten::<64,1>([...proposedSubMiddle, ...subSecret])) == subCommitment);
+
+    // // // Check that JWT contains valid aud
+    // // u8[AUD_LENGTH] proposedAud = substringAt(formatted, audIdx + 1);
+    // // assert(proposedAud == AUD);
+
+    // // // Check that JWT contains valid exp
+    // // u8[EXP_START_LENGTH]  proposedExpStart  = substringAt(formatted, expIdx + 1);
+    // // u8[EXP_MIDDLE_LENGTH] proposedExpMiddle = substringAt(formatted, expIdx + 1 + EXP_START_LENGTH);
+    // // u8[EXP_END_LENGTH]    proposedExpEnd    = substringAt(formatted, expIdx + 1 + EXP_START_LENGTH + EXP_MIDDLE_LENGTH);
+    // // assert(proposedExpStart == EXP_START);
+    // // assert(proposedExpEnd == EXP_END);
+    // // assert(decimalStringToField(proposedExpMiddle) > expGreaterThan);
+
+    // // Check that JWT hashes to jwtDigest
+    // // assert(sha256(paddedJwt) == jwtDigest);
+
+    // return proposedSubMiddle;
+  }
