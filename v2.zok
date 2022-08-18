@@ -34,7 +34,7 @@ const u8[AUD_LENGTH] AUD = [34,97,117,100,34,58,34,103,110,111,115,105,115,34]; 
 
 const u32 JWT_BLOCKS = 3; // represents length of padded JWT (base64 JWT with periods, header and payload, no signature) in 512-byte multiples 
 const u32 JWT_LENGTH_BASE64 = JWT_BLOCKS * 64;
-const u32 HEADER_LENGTH_BASE64 = 102; // how long is eyJh... (excluding the period)
+const u32 HEADER_LENGTH_BASE64 = 19; // how long is eyJh... (excluding the period)
 const u32 PAYLOAD_LENGTH_BASE64_ = JWT_LENGTH_BASE64 - HEADER_LENGTH_BASE64 - 1; // 1 for . between payload and header
 const u32 PAYLOAD_BASE64_REMAINDER = PAYLOAD_LENGTH_BASE64_ % 4;
 const u32 PAYLOAD_LENGTH_BASE64 = PAYLOAD_LENGTH_BASE64_ - PAYLOAD_BASE64_REMAINDER; // Floor when divided by 4 so it's a valid base64 length
