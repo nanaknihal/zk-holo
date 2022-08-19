@@ -47,11 +47,11 @@ const circuitParams = {
 
 
 // Paylod offset in plaintext = header length (converted to plaintext, so 3/4 the length) + 1 for period
-const payloadOffset = Math.ceil((header.length + 1)* 3 / 4);
+// const payloadOffset = Math.ceil((header.length + 1)* 3 / 4);
                                                                                                 // Zokrates likes string formats
-const subIdx = (payloadOffset + searchForPlainTextInBase64(circuitParams.subStart, payload)[0]) .toString();
-const expIdx = (payloadOffset + searchForPlainTextInBase64(circuitParams.expStart, payload)[0]) .toString();
-const audIdx = (payloadOffset + searchForPlainTextInBase64(circuitParams.aud,      payload)[0]) .toString();
+const subIdx = (/*payloadOffset + */searchForPlainTextInBase64(circuitParams.subStart, payload)[0]) .toString();
+const expIdx = (/*payloadOffset + */searchForPlainTextInBase64(circuitParams.expStart, payload)[0]) .toString();
+const audIdx = (/*payloadOffset + */searchForPlainTextInBase64(circuitParams.aud,      payload)[0]) .toString();
 
 // This should be replaced with a call to the subSecretOracle with the JWT as proof that we are allowed to obtain the subSecret
 const getSubParams = (jwt) => {
@@ -77,7 +77,8 @@ const digest = toU32StringArray(
         "hex"
     )
 );
-const expGreaterThan = "1651365252";
+// const expGreaterThan = "1651365252";
+const expGreaterThan = "1651352872";
 const address = toU8StringArray(Buffer.from("abcdef12345678909876"))
 initialize().then((zokratesProvider) => {
 
