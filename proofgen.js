@@ -1,7 +1,7 @@
 const fs = require("fs");
 const { randomBytes } = require("crypto");
 const { assert } = require("console");
-const { generateCircuit, generateAndSaveCircuit } = require("./generateCircuit");
+const { generateCode, generateAndSaveCode } = require("./generateCode");
 const { stringToPaddedU32NBy16StringArray } = require("./utils");
 const { toU8StringArray } = require("./utils");
 const { toU32StringArray } = require("./utils");
@@ -96,7 +96,7 @@ async function getProofParams(jwtType, jwt, address) {
         address
     ];
 
-    const [ circuitID, code ] = generateCircuit(cp); // Should be renamed to generateCode as it's not quite generating a circuit
+    const [ circuitID, code ] = generateCode(cp);
 
     return [ circuitID, inputs ]
 }
@@ -145,4 +145,8 @@ function argsToCLIArgs (args) {
     .join(``)
     .replace(/\"|,|\[|\]/g, ` `)
     .replace(/\s+/g, ` `)
+}
+
+module.exports = {
+    proveJWT : proveJWT
 }

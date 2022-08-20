@@ -18,7 +18,7 @@ const circuitParams = {
 */
 
 
-function generateCircuit(circuitParams){
+function generateCode(circuitParams){
   // A paramstring is used as a UUID for a circuit. Thus, a circuit can be generated with circuitParams and can be named ${paramString} so it is clear exactly what the circuit does
   const paramString = Buffer.from(Object.values(circuitParams).join("_")).toString("base64");
 
@@ -127,8 +127,8 @@ def main(private u32[JWT_BLOCKS][16] paddedJwt, u32[8] jwtDigest, u32[8] subComm
 
   return [ paramString, source ];
 }
-function generateAndSaveCircuit(circuitParams) {
-  const [ paramString, source ] = generateCircuit(circuitParams);
+function generateAndSaveCode(circuitParams) {
+  const [ paramString, source ] = generateCode(circuitParams);
   const codePath= `generatedCircuits/${paramString}.zok`;
   const compiledPath = `compiled/${paramString}.out`;
   const [pkeyPath, vkeyPath] = [`pvkeys/${paramString}.proving.key`, `pvkeys/${paramString}.verification.key`];
@@ -144,6 +144,6 @@ function generateAndSaveCircuit(circuitParams) {
 }
 
 module.exports = {
-  generateCircuit : generateCircuit,
-  generateAndSaveCircuit : generateAndSaveCircuit
+  generateCode : generateCode,
+  generateAndSaveCode : generateAndSaveCode
 }
