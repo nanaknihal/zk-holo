@@ -6,6 +6,7 @@ const { stringToPaddedU32NBy16StringArray } = require("./utils");
 const { toU8StringArray } = require("./utils");
 const { toU32StringArray } = require("./utils");
 const { searchForPlainTextInBase64 } = require('wtfprotocol-helpers');
+const axios = require("axios");
 const ethers = require("ethers");
 const util = require("util");
 const exec = util.promisify(require("child_process").exec); // wrapper for exec that allows async/await for its completion (https://stackoverflow.com/questions/30763496/how-to-promisify-nodes-child-process-exec-and-child-process-execfile-functions)
@@ -49,11 +50,28 @@ console.error("WARNING Please remember to check JWT signature against google jwk
     hashed: "733181da32e727b8507a47d57571d2ae9d4f43d3c86cc758ff2d1dd45875a282" // blake2s digest of concat(input + key). this may be changed from blake2s another quantum-resistant and length-extension-resistant function
     }
  */
-async function getSubParams(jwt) {
-    const payloadJSON = JSON.parse(Buffer.from(jwt.split(".")[1], "base64"));
-    return await axios.post("https://recovery.holonym.id/subkeyoracle", {
-        sub : payloadJSON.sub
-    });
+
+// For testing purposes, so we can test with expired JWTs (getSubParams will fail as it uses production server which will reject requests with JWTs)
+function getSubParamsTesting(jwtType){
+    if (jwtType == "google") {
+        return {
+            input: "100787844473172298543",
+            key: "43ed707f926d4c924f8cf5430beb8e70d8f9633c221fcabe6a4eb09862794fb4e424d08ab5a20863920591",
+            hashed: "733181da32e727b8507a47d57571d2ae9d4f43d3c86cc758ff2d1dd45875a282"
+        }
+    } else if (jwtType == "twitter") {
+        return {
+            input: "ProtocolWtf",
+            key: "d05bfc1feaa3e042600482b51d73914c44d37a40b40d0633170c40d77ea818ca25ead4c004d0b08d2e21b3736d35d364775c096610",
+            hashed: "51865586b53355f1bb12a8b989746d333093b7b4abc112645de89998f3d76a4d"
+        }
+    }
+    
+}
+async function getSubParams(jwtType, jwt) {
+    return await axios.post("https://oracle.holonym.link/subCommitment", {
+        jwt : jwt
+    }).data;
     
 }
 
@@ -70,7 +88,10 @@ async function getProofParams(jwtType, jwt, address) {
     const expIdx = (searchForPlainTextInBase64(cp.expStart, payload)[0]) .toString();
     const audIdx = (searchForPlainTextInBase64(cp.aud,      payload)[0]) .toString();
     
-    const subParams = await getSubParams(jwt);
+    // const subParams = 
+    console.log("env: ", process.env.NODE_ENV)
+    const subParams = (process.env.NODE_ENV == "development") ? await getSubParamsTesting(jwtType) : await getSubParams(jwtType, jwt); 
+    console.log("subparams", subParams)
     const [subCommitment, subSecret] = [toU32StringArray(Buffer.from(subParams.hashed, "hex")), toU8StringArray(Buffer.from(subParams.key, "hex"))];
     
     const tbs = `${header}.${payload}`;
@@ -82,7 +103,7 @@ async function getProofParams(jwtType, jwt, address) {
         )
     );
 
-    const expGreaterThan = (Date.now()/1000).toString();
+    const expGreaterThan = process.env.NODE_ENV == "development" ? "1641020400" : Math.floor(Date.now()/1000).toString();
 
     const inputs = [
         paddedJwt, 
@@ -93,7 +114,7 @@ async function getProofParams(jwtType, jwt, address) {
         audIdx, 
         expGreaterThan, 
         expIdx,
-        address
+        toU8StringArray(Buffer.from(address.replace("0x",""), "hex"))
     ];
 
     const [ circuitID, code ] = generateCode(cp);
