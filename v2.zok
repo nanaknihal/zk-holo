@@ -51,7 +51,7 @@ def payloadFromPaddedJWT(u32[JWT_BLOCKS][16] paddedJwt) -> u8[PAYLOAD_LENGTH_PLA
 }
 
 // Verifies a JWT
-def main(private u32[JWT_BLOCKS][16] paddedJwt, u32[8] jwtDigest, u32[8] subCommitment, private u8[SUB_SECRET_LENGTH] subSecret, private u32 subIdx, private u32 audIdx, field expGreaterThan, private u32 expIdx, u8[20] malleabilityAddress) -> bool {
+def main(private u32[JWT_BLOCKS][16] paddedJwt, u32[8] jwtDigest, u32[8] subCommitment, private u8[SUB_SECRET_LENGTH] subSecret, private u32 subIdx, private u32 audIdx, field expGreaterThan, private u32 expIdx, u32[5] malleabilityAddress) -> bool {
   u8[PAYLOAD_LENGTH_PLAINTEXT] formatted = payloadFromPaddedJWT(paddedJwt);
   // Check that JWT contains valid sub
   u8[SUB_START_LENGTH]  proposedSubStart   = substringAt(formatted, subIdx);
@@ -81,7 +81,7 @@ def main(private u32[JWT_BLOCKS][16] paddedJwt, u32[8] jwtDigest, u32[8] subComm
   // NOTE: THIS DIDN'T CHANGE NUMBER OF CONSTRAINTS -- ZoKrates seems to automatically add constraints even for unused input, perhaps
   // for our own safety. Still, it may be good to keep this line, even if it is "supserstitious"
   // See https://geometry.xyz/notebook/groth16-malleability 
-  for u32 i in 0..20 {
+  for u32 i in 0..5 {
       assert(malleabilityAddress[i] * 0 == 0);
   }
   return true;

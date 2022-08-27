@@ -23,7 +23,7 @@ def test() -> bool {
     field expGreaterThan = 1651365252;
     field expNotGreaterThan = 1651365253;
 
-    u8[20] malleabilityAddress = [1,2,3,4,5,6,7,8,9,69,69,69,13,14,15,16,17,18,19,20];
+    u32[5] malleabilityAddress = [1,2,3,69,5];
 
     bool a = checkJwt(twitterPASSJWT, digest, subCommitment, subSecret, subIdx, audIdx, expGreaterThan, expIdx, malleabilityAddress);
     // bool b = checkJwt(twitterPASSJWT, digest, subCommitment, subSecret, subIdx, audIdx, expNotGreaterThan, expIdx);
